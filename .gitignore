@@ -1,0 +1,12 @@
+# Secrets
+.env
+credentials.yml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Probe output may contain your child's data
+probe_output*.txt
