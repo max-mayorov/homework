@@ -10,3 +10,6 @@ __pycache__/
 
 # Probe output may contain your child's data
 probe_output*.txt
+
+# Dry-run receipt preview contains your child's data
+print_preview.png
