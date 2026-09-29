@@ -50,6 +50,8 @@ chmod 600 .env
 
 All settings come from `.env` or from environment variables, which override `.env`. Both `.env` and `credentials.yml` are in `.gitignore`.
 
+**Special characters in `.env`:** put values in single quotes, e.g. `SMARTSCHOOL_PASSWORD='my#pass word'`. Without quotes, a `#` that follows a space starts a comment, and everything after it is dropped. Inside single quotes everything is literal, including `#`, `$`, `"` and backslashes. If the value itself contains a single quote, use double quotes instead and put a backslash before any `"` or `\` in it: `"it's#1"`. No spaces around `=`.
+
 | Variable | What to put there |
 |---|---|
 | `SMARTSCHOOL_USERNAME` | your child's Smartschool username |

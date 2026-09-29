@@ -20,7 +20,7 @@ def load_settings() -> dict[str, str]:
     credentials.yml uses the smartschool library's lower-case keys (username, password, ...)
     for the Smartschool fields, and upper-case env-style keys for anything else.
     """
-    load_dotenv(HERE / ".env")
+    load_dotenv(HERE / ".env", interpolate=False)  # keep "${" in passwords literal
     settings: dict[str, str] = {}
 
     yml = HERE / "credentials.yml"

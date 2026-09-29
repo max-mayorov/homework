@@ -57,3 +57,19 @@ def test_no_printer_address_means_no_printing(monkeypatch):
     monkeypatch.setattr(notify, "send", lambda settings, text: None)
     monkeypatch.setattr(printer, "print_image", lambda *a: pytest.fail("should not print"))
     assert main.run(Namespace(dry_run=False, date=date(2026, 9, 29)), SETTINGS) == 0
+
+
+def test_env_file_values_are_taken_literally(tmp_path, monkeypatch):
+    import config
+
+    (tmp_path / ".env").write_text(
+        "SMARTSCHOOL_PASSWORD='ab#c${HOME}d'\nTELEGRAM_CHAT_ID=12#34\nTELEGRAM_BOT_TOKEN=\"x#y z\"\n", encoding="utf8"
+    )
+    monkeypatch.setattr(config, "HERE", tmp_path)
+    for key in ("SMARTSCHOOL_PASSWORD", "TELEGRAM_CHAT_ID", "TELEGRAM_BOT_TOKEN"):
+        monkeypatch.setenv(key, "x")  # records the original state, so pytest restores it afterwards
+        monkeypatch.delenv(key)
+    settings = config.load_settings()
+    assert settings["SMARTSCHOOL_PASSWORD"] == "ab#c${HOME}d"
+    assert settings["TELEGRAM_CHAT_ID"] == "12#34"
+    assert settings["TELEGRAM_BOT_TOKEN"] == "x#y z"
