@@ -1,4 +1,4 @@
-"""Evening homework check: fetch from Smartschool, summarize with Claude, send via Telegram.
+"""Evening homework check: fetch from Smartschool, build a summary, send via Telegram.
 
     python main.py                      # normal run (sends to Telegram)
     python main.py --dry-run            # print the summary instead of sending
@@ -17,10 +17,10 @@ from fetch import TZ
 
 log = logging.getLogger("homework")
 
-SECRET_KEYS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "ANTHROPIC_API_KEY", "TELEGRAM_BOT_TOKEN")
+SECRET_KEYS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "TELEGRAM_BOT_TOKEN")
 
 
-OWN_MODULES = {"__main__", "main", "config", "fetch", "explain", "notify"}
+OWN_MODULES = {"__main__", "main", "config", "fetch", "message", "notify"}
 
 
 def _log_filter(record) -> bool:
@@ -61,16 +61,16 @@ def error_message(step: str, exc: BaseException, settings: dict[str, str]) -> st
 
 
 def run(args, settings: dict[str, str]) -> int:
-    from explain import explain
     from fetch import fetch
+    from message import build_message
     from notify import send
 
     today: date = args.date or datetime.now(TZ).date()
     step = "fetching from Smartschool"
     try:
         items = fetch(settings, today)
-        step = "writing the summary"
-        summary = explain(items, today, settings)
+        step = "building the message"
+        summary = build_message(items, today)
         step = "sending to Telegram"
         if args.dry_run:
             print(summary)
