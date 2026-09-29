@@ -33,6 +33,7 @@ class Item:
     due_time: str | None  # "HH:MM" (Brussels time), None for whole-day items
     type: str  # "test" | "homework" | "bring" | "other"
     type_label: str  # the school's own name for the type, e.g. "Toets"
+    done: bool = False  # marked as resolved in Smartschool
 
 
 def classify(type_label: str) -> str:
@@ -65,7 +66,16 @@ def normalize_planned_element(raw: dict) -> Item:
         due_time=None if period.get("whole_day") else start.strftime("%H:%M"),
         type=classify(type_label),
         type_label=type_label or "(none)",
+        done=(raw.get("resolved_status") or "").strip().lower() == "resolved",
     )
+
+
+def next_school_day(today: date) -> date:
+    """The next Monday-to-Friday day after today: Friday, Saturday and Sunday all give Monday."""
+    day = today + timedelta(days=1)
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+    return day
 
 
 def normalize_all(raws: list[dict], today: date) -> list[Item]:
@@ -104,6 +114,6 @@ def fetch(settings: dict[str, str], today: date) -> list[Item]:
 
     raws = [to_plain(e) for e in PlannedElements(session, from_date=start, till_date=end)]
     items = normalize_all(raws, today)
-    tomorrow = today + timedelta(days=1)
-    log.info("Fetched %d planner element(s); %d in window, %d due tomorrow", len(raws), len(items), sum(i.due == tomorrow for i in items))
+    target = next_school_day(today)
+    log.info("Fetched %d planner element(s); %d in window, %d due by %s", len(raws), len(items), sum(i.due <= target for i in items), target)
     return items

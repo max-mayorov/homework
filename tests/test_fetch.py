@@ -18,6 +18,7 @@ def test_normalize_single_element():
         due_time="09:05",
         type="test",
         type_label="Toets",
+        done=False,
     )
 
 
@@ -69,3 +70,10 @@ def test_due_date_uses_brussels_time():
 def test_description_is_kept_when_present():
     item = normalize_planned_element(dict(RAWS[0], description="  Bring a calculator  "))
     assert item.description == "Bring a calculator"
+
+
+def test_done_flag_from_resolved_status():
+    by_title = {i.title: i.done for i in normalize_all(RAWS, TODAY)}
+    assert by_title["H3: vergelijkingen oefenen"] is True  # "resolved"
+    assert by_title["Toets H 1.3"] is False  # "unresolved"
+    assert by_title["Sportdag"] is False  # ""

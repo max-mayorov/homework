@@ -1,10 +1,10 @@
 # Smartschool homework → Telegram
 
-Every evening this checks your child's Smartschool planner and sends you a Telegram message: what's due tomorrow, with tests flagged, and what's coming up in the next 7 days. The teacher's text is shown as written (usually Dutch or French); there's no AI step.
+Every evening this checks your child's Smartschool planner and sends you a Telegram message: what's due on the next school day, with tests flagged, and what's coming up in the next 7 days. The teacher's text is shown as written (usually Dutch or French); there's no AI step.
 
 ```
 fetch.py    Smartschool planner  →  list of Item(subject, title, description, due, type)
-message.py  items               →  plain-text message (tomorrow first, then the week)
+message.py  items               →  plain-text message (next school day first, then the week)
 notify.py   summary             →  Telegram (split at 4096 characters)
 main.py     runs the three steps; any failure is sent to you as a short Telegram message
 probe.py    one-off diagnostic: dumps raw Smartschool data for the next 7 days
@@ -58,24 +58,28 @@ TELEGRAM_CHAT_ID: "123456789"
 ## Running
 
 ```bash
-.venv/bin/python main.py --dry-run                   # print the summary, don't send
+.venv/bin/python main.py --dry-run                   # print the message, don't send
 .venv/bin/python main.py --dry-run --date 2026-10-05 # pretend today is 5 Oct
-.venv/bin/python main.py                             # fetch, summarize, send
+.venv/bin/python main.py                             # fetch, build the message, send
 .venv/bin/python -m pytest                           # unit tests (fixture data, no logins)
 ```
 
-"Tomorrow" means the next calendar day in Europe/Brussels time. On a Friday evening that's Saturday, so the message will usually say nothing is due tomorrow and list Monday's items under "coming up this week".
+The first section covers the **next school day** (Monday to Friday, Europe/Brussels time). Monday to Thursday evenings, that's tomorrow; Friday, Saturday and Sunday evenings, it's Monday. School holidays aren't known to the app, so during a holiday the message will just say nothing is due.
+
+Every item has a checkbox: ✅ if it's marked as done in Smartschool, ⬜ if not. Done items stay in the list.
 
 If any step fails (login, fetching, Telegram), you get a short Telegram message naming the step and the error, with every configured secret masked. If Telegram itself is the step that fails, the error goes to stderr and the exit code is 1.
 
-## Run it daily at 18:00 (Europe/Brussels)
+## Run it at 18:00 (Europe/Brussels), every day except Friday
 
 With cron, on any Linux or macOS machine that's on at 18:00:
 
 ```cron
 CRON_TZ=Europe/Brussels
-0 18 * * * cd /path/to/homework && .venv/bin/python main.py >> "$HOME/homework.log" 2>&1
+0 18 * * 0-4,6 cd /path/to/homework && .venv/bin/python main.py >> "$HOME/homework.log" 2>&1
 ```
+
+`0-4,6` means Sunday to Thursday, plus Saturday. There's no Friday run: Saturday and Sunday evenings both report Monday.
 
 `CRON_TZ` works with cronie (Fedora, Arch, most other distros) and on macOS. On Debian/Ubuntu's default cron, `CRON_TZ` is ignored, so either set the machine's timezone to Europe/Brussels (`sudo timedatectl set-timezone Europe/Brussels`) or convert 18:00 to the machine's timezone yourself.
 

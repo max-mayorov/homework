@@ -2,40 +2,49 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from itertools import groupby
 
-NOTHING_AT_ALL = "Nothing due tomorrow, and nothing on the planner for the coming week."
+from fetch import next_school_day
+
+NOTHING_AT_ALL = "Nothing due for the next school day, and nothing on the planner for the coming week."
 
 MARKERS = {"test": "⚠️ TEST", "homework": "📝 Homework", "bring": "🎒 Bring", "other": "•"}
+DONE, OPEN = "✅", "⬜"
 
 
 def _day(d: date) -> str:
     return f"{d:%A} {d.day} {d:%B}"
 
 
-def _item_lines(item) -> list[str]:
-    when = f", {item.due_time}" if item.due_time else ""
-    lines = [f"{MARKERS.get(item.type, '•')} · {item.subject} ({item.type_label}{when})", f"   {item.title or '(no title)'}"]
+def _item_lines(item, show_day: bool = False) -> list[str]:
+    details = [item.type_label]
+    if show_day:
+        details.append(f"{item.due:%A}")
+    if item.due_time:
+        details.append(item.due_time)
+    box = DONE if item.done else OPEN
+    lines = [f"{box} {MARKERS.get(item.type, '•')} · {item.subject} ({', '.join(details)})", f"   {item.title or '(no title)'}"]
     if item.description:
         lines.append(f"   {item.description}")
     return lines
 
 
 def build_message(items, today: date) -> str:
+    """Items due up to the next school day first (Sat/Sun/Fri evening -> Monday), then the rest of the week."""
     if not items:
         return NOTHING_AT_ALL
 
-    tomorrow = today + timedelta(days=1)
-    due_tomorrow = [i for i in items if i.due == tomorrow]
-    later = [i for i in items if i.due > tomorrow]
+    target = next_school_day(today)
+    due_next = [i for i in items if i.due <= target]
+    later = [i for i in items if i.due > target]
 
-    if due_tomorrow:
-        lines = [f"📚 Due tomorrow, {_day(tomorrow)}", ""]
-        for item in due_tomorrow:
-            lines += _item_lines(item)
+    if due_next:
+        lines = [f"📚 Due {_day(target)}", ""]
+        for item in due_next:
+            lines += _item_lines(item, show_day=item.due != target)  # e.g. something due on a Sunday
     else:
-        lines = [f"📚 Nothing due tomorrow, {_day(tomorrow)}."]
+        lines = [f"📚 Nothing due {_day(target)}."]
 
     if later:
         lines += ["", "Coming up this week"]
