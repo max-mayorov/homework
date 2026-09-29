@@ -15,15 +15,15 @@ It uses the unofficial [`smartschool`](https://github.com/svaningelgem/smartscho
 
 ## Quick install (DietPi / Raspberry Pi OS / Debian)
 
-On a Raspberry Pi 4 with DietPi, as root:
+On a Raspberry Pi 4 with DietPi (as root, or as `dietpi` with the `sudo`s shown):
 
 ```bash
-apt install -y git
-git clone https://github.com/max-mayorov/homework.git /opt/homework
+sudo apt install -y git
+sudo git clone https://github.com/max-mayorov/homework.git /opt/homework
 cd /opt/homework
-./install.sh          # 1st run: installs everything, creates .env, stops
-nano .env             # fill in your settings (table below)
-./install.sh          # 2nd run: dry run, then adds the 18:00 schedule
+sudo ./install.sh     # 1st run: installs everything, creates .env, stops
+sudo nano .env        # fill in your settings (table below)
+sudo ./install.sh     # 2nd run: dry run, then adds the 18:00 schedule
 ```
 
 Each run of `install.sh`:
@@ -32,7 +32,7 @@ Each run of `install.sh`:
 3. does a dry run, which logs in and shows the report without sending anything;
 4. only if that works, adds the cron entry. See "Run it at 18:00" below.
 
-It's safe to run again: after `git pull`, run `./install.sh` to update. The app runs as whoever owns the checkout (root with the commands above). Scheduled runs write to `homework.log` in the same folder; the log never contains homework text.
+It's safe to run again. To update: `cd /opt/homework && sudo git pull && sudo ./install.sh`. Both need `sudo` because the checkout belongs to root. For the same reason, run the commands under "Running" below with `sudo` too, e.g. `sudo .venv/bin/python main.py --dry-run`: `.env` is readable only by its owner. The app runs as whoever owns the checkout (root with the commands above). Scheduled runs write to `homework.log` in the same folder; the log never contains homework text.
 
 ## Manual setup
 

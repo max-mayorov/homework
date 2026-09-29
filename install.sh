@@ -1,7 +1,7 @@
 #!/bin/bash
-# One-shot installer for DietPi / Debian / Raspberry Pi OS. Safe to run again (e.g. after git pull).
+# One-shot installer for DietPi / Debian / Raspberry Pi OS. Safe to run again (e.g. after a git pull).
 #
-#   git clone https://github.com/max-mayorov/homework.git /opt/homework
+#   sudo git clone https://github.com/max-mayorov/homework.git /opt/homework
 #   cd /opt/homework && sudo ./install.sh
 #
 # 1. installs system packages (Python venv, fonts for the receipt printer, cron)
@@ -86,12 +86,15 @@ cron_line="0 * * * * $DIR/cron.sh >> $DIR/homework.log 2>&1 $CRON_MARKER"
 echo "Cron entry for user $OWNER:"
 echo "    $cron_line"
 
+# Commands must run as the checkout's owner: git needs to write to .git, and .env is readable only by the owner
+sudo_=""; [ "$OWNER" = root ] && sudo_="sudo "
+
 cat <<EOF
 
 Done. Useful commands:
     cd $DIR
-    .venv/bin/python main.py --dry-run   # preview the report
-    .venv/bin/python main.py             # send it now (Telegram, and printer if PRINTER_ADDRESS is set)
+    ${sudo_}.venv/bin/python main.py --dry-run   # preview the report
+    ${sudo_}.venv/bin/python main.py             # send it now (Telegram, and printer if PRINTER_ADDRESS is set)
     tail $DIR/homework.log               # what the scheduled runs did
-    git pull && sudo ./install.sh        # update
+    ${sudo_}git pull && sudo ./install.sh   # update
 EOF
