@@ -1,3 +1,6 @@
 smartschool[mfa]==0.10.0
+anthropic>=1.9,<2
+requests>=2.31
 python-dotenv>=1.0
 pyyaml>=6.0
+pytest>=8

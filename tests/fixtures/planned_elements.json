@@ -1,0 +1,65 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "period": {"date_time_from": "2026-10-01T15:15:00+02:00", "date_time_to": "2026-10-01T16:05:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "H3: vergelijkingen oefenen",
+    "courses": [{"name": "Wiskunde"}],
+    "assignment_type": {"name": "Meebrengen", "abbreviation": "ME"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000002",
+    "period": {"date_time_from": "2026-10-02T09:05:00+02:00", "date_time_to": "2026-10-02T09:55:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "Toets H 1.3",
+    "courses": [{"name": "Wiskunde"}],
+    "assignment_type": {"name": "Toets", "abbreviation": "TO"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000003",
+    "period": {"date_time_from": "2026-10-01T10:15:00+02:00", "date_time_to": "2026-10-01T11:05:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "Toets: hoofdstuk 2 t.e.m. p. 40",
+    "courses": [{"name": "STEM"}],
+    "assignment_type": {"name": "Grote toets", "abbreviation": "GT"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000004",
+    "period": {"date_time_from": "2026-09-30T08:15:00+02:00", "date_time_to": "2026-09-30T09:05:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "à étudier: les verbes p20-22",
+    "courses": [{"name": "Frans"}],
+    "assignment_type": {"name": "Les leren", "abbreviation": "LL"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000005",
+    "period": {"date_time_from": "2026-09-30T11:05:00+02:00", "date_time_to": "2026-09-30T11:55:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "Kaartoefening p 24, meebrengen: passer",
+    "courses": [{"name": "Geschiedenis"}],
+    "assignment_type": {"name": "Opdracht", "abbreviation": "OP"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000006",
+    "period": {"date_time_from": "2026-10-09T08:15:00+02:00", "date_time_to": "2026-10-09T09:05:00+02:00", "whole_day": false, "deadline": true},
+    "planned_element_type": "planned-assignments",
+    "name": "Too far away",
+    "courses": [{"name": "Engels"}],
+    "assignment_type": {"name": "Taak", "abbreviation": "TA"},
+    "resolved_status": "unresolved"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000007",
+    "period": {"date_time_from": "2026-10-03T00:00:00+02:00", "date_time_to": "2026-10-03T23:59:59+02:00", "whole_day": true, "deadline": false},
+    "planned_element_type": "planned-to-dos",
+    "name": "Sportdag",
+    "courses": [],
+    "assignment_type": null,
+    "resolved_status": ""
+  }
+]
