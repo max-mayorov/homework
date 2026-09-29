@@ -13,7 +13,28 @@ probe.py    one-off diagnostic: dumps raw Smartschool data for the next 7 days
 
 It uses the unofficial [`smartschool`](https://github.com/svaningelgem/smartschool) library. That library has no parent support as such, but a parent login (your child's username plus your own password) works. Only the **planner** (`PlannedElements`) returns data for a parent login. `FutureTasks` and the agenda lessons come back empty, so the app doesn't use them.
 
-## Setup
+## Quick install (DietPi / Raspberry Pi OS / Debian)
+
+On a Raspberry Pi 4 with DietPi, as root:
+
+```bash
+apt install -y git
+git clone https://github.com/max-mayorov/homework.git /opt/homework
+cd /opt/homework
+./install.sh          # 1st run: installs everything, creates .env, stops
+nano .env             # fill in your settings (table below)
+./install.sh          # 2nd run: dry run, then adds the 18:00 schedule
+```
+
+Each run of `install.sh`:
+1. installs the system packages (Python, the fonts the receipt printer needs, cron) and the Python requirements in `.venv`;
+2. checks that the required settings in `.env` are filled in;
+3. does a dry run, which logs in and shows the report without sending anything;
+4. only if that works, adds the cron entry. See "Run it at 18:00" below.
+
+It's safe to run again: after `git pull`, run `./install.sh` to update. The app runs as whoever owns the checkout (root with the commands above). Scheduled runs write to `homework.log` in the same folder; the log never contains homework text.
+
+## Manual setup
 
 Requires Python 3.10+.
 
@@ -86,16 +107,13 @@ If `PRINTER_ADDRESS` is set, each run also prints the report on an 80 mm thermal
 
 ## Run it at 18:00 (Europe/Brussels), every day except Friday
 
-With cron, on any Linux or macOS machine that's on at 18:00:
+`install.sh` sets this up (see "Quick install" above). To do it by hand, add one crontab line that runs `cron.sh` every hour:
 
 ```cron
-CRON_TZ=Europe/Brussels
-0 18 * * 0-4,6 cd /path/to/homework && .venv/bin/python main.py >> "$HOME/homework.log" 2>&1
+0 * * * * /path/to/homework/cron.sh >> /path/to/homework/homework.log 2>&1
 ```
 
-`0-4,6` means Sunday to Thursday, plus Saturday. There's no Friday run: Saturday and Sunday evenings both report Monday.
-
-`CRON_TZ` works with cronie (Fedora, Arch, most other distros) and on macOS. On Debian/Ubuntu's default cron, `CRON_TZ` is ignored, so either set the machine's timezone to Europe/Brussels (`sudo timedatectl set-timezone Europe/Brussels`) or convert 18:00 to the machine's timezone yourself.
+`cron.sh` only runs the check when it's 18:xx in Europe/Brussels and not a Friday, so the machine's own timezone doesn't matter and summer time is handled. The hourly calls at other times exit immediately. There's no Friday run: Saturday and Sunday evenings both report Monday.
 
 The app only needs outbound HTTPS access to your school's `*.smartschool.be` host, and `api.telegram.org`, plus TCP to the printer if you use one. Nothing about it is tied to a particular host.
 

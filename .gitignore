@@ -13,3 +13,6 @@ probe_output*.txt
 
 # Dry-run receipt preview contains your child's data
 print_preview.png
+
+# Scheduled-run log (no homework content, but no need to commit it)
+homework.log
