@@ -32,4 +32,5 @@ The moment a Result became visible to the child and parent, which can be days af
 _Avoid_: Result date, availability date
 
 **Results report**:
-The overview of Results whose Publication time falls since the previous Results report.
+The overview of new Results: those whose Publication time falls after the previous Results report was delivered, and no more than 14 days ago.
+_Avoid_: Grades summary
