@@ -16,3 +16,6 @@ print_preview.png
 
 # Scheduled-run log (no homework content, but no need to commit it)
 homework.log
+
+# When the last Results report was delivered (results.py)
+last_results_run.txt

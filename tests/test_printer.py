@@ -98,3 +98,24 @@ def test_print_image_unreachable_printer_raises_printer_error():
     s.close()  # nothing listening on this port now
     with pytest.raises(PrinterError, match=f"127.0.0.1:{port}"):
         print_image(f"127.0.0.1:{port}", Image.new("1", (WIDTH, 10), 1), timeout=2)
+
+
+def _result(colour, feedback=()):
+    from results import Result
+
+    return Result(subject="Frans", name="Test Verbes", score="4/10", percentage=40, colour=colour, taken=date(2026, 10, 2), published=NOW, feedback=feedback)
+
+
+def test_render_results_is_black_and_white_and_receipt_width():
+    from printer import render_results
+
+    img = render_results([_result("red", ("Au travail!",)), _result("olive")], now=NOW)
+    assert img.mode == "1" and img.width == WIDTH
+    assert 200 < img.height < 2000
+
+
+def test_each_score_colour_gets_its_own_face():
+    from printer import render_results
+
+    images = {c: render_results([_result(c)], now=NOW).tobytes() for c in ("red", "yellow", "green", "olive", "steel")}
+    assert len(set(images.values())) == 5

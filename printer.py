@@ -41,6 +41,10 @@ FONT_CANDIDATES = {
 }
 
 
+# Mouth for each score colour on the receipt (the printer has no colour or emoji): >0 smile, <0 frown.
+FACE_MOUTHS = {"red": -1, "yellow": 0, "green": 1, "olive": 2}
+
+
 class PrinterError(RuntimeError):
     pass
 
@@ -143,6 +147,48 @@ class _Canvas:
             self.text(item.description, 22, indent=indent, gap=0)
         self.y += 14
 
+    def face(self, colour: str | None, x: int, top: int, size: int = 30) -> None:
+        """A smiley whose mouth turns up the better the score colour; a plain dot for colours without a face."""
+        d = self.draw
+        if colour not in FACE_MOUTHS:
+            r = size // 5
+            d.ellipse((x + size // 2 - r, top + size // 2 - r, x + size // 2 + r, top + size // 2 + r), fill=0)
+            return
+        d.ellipse((x, top, x + size, top + size), outline=0, width=3)
+        eye = max(2, size // 12)
+        for ex in (x + size * 0.34, x + size * 0.66):
+            d.ellipse((ex - eye, top + size * 0.36 - eye, ex + eye, top + size * 0.36 + eye), fill=0)
+        left, right = x + size * 0.27, x + size * 0.73
+        curve = FACE_MOUTHS[colour]  # >0 smile, <0 frown, 0 straight
+        if curve == 0:
+            d.line((left, top + size * 0.68, right, top + size * 0.68), fill=0, width=3)
+        elif curve > 0:
+            depth = size * 0.1 * curve
+            d.arc((left, top + size * 0.62 - depth, right, top + size * 0.62 + depth), 0, 180, fill=0, width=3)
+        else:
+            d.arc((left, top + size * 0.66, right, top + size * 0.86), 180, 360, fill=0, width=3)
+
+    def result(self, result) -> None:
+        self._room()
+        size, top = 30, self.y
+        self.face(result.colour, MARGIN, top, size)
+
+        x = MARGIN + size + 12
+        score = f"{result.score} ({result.percentage}%)" if result.percentage is not None else result.score
+        note = " (doesn't count)" if not result.counts else ""
+        font = self.font("bold", 26)
+        for line in wrap(f"{result.subject} · {score}{note}", font, WIDTH - MARGIN - x):
+            self.draw.text((x, self.y), line, font=font, fill=0)
+            self.y += 33
+        self.y += 2
+
+        indent = size + 12
+        self.text(result.name or "(no name)", 24, indent=indent, gap=0)
+        self.text(f"Taken {_day(result.taken)}", 22, indent=indent, gap=0)
+        for text in result.feedback:
+            self.text(f"“{text}”", 22, indent=indent, gap=0)
+        self.y += 14
+
     def image(self) -> Image.Image:
         return self.img.crop((0, 0, WIDTH, self.y + MARGIN))
 
@@ -182,6 +228,18 @@ def render_report(items, today: date, settings: dict[str, str] | None = None, no
             c.text(_day(day), 26, "bold", gap=8)
             for item in day_items:
                 c.item(item)
+    return c.image()
+
+
+def render_results(results, settings: dict[str, str] | None = None, now: datetime | None = None) -> Image.Image:
+    """Same content as the Results report message, laid out for an 80 mm receipt."""
+    now = now or datetime.now(TZ)
+    c = _Canvas(settings)
+    c.text("RESULTS", 44, "bold", gap=0)
+    c.text(f"Printed {now:%a %d %b %H:%M}", 20, gap=0)
+    c.rule(4)
+    for result in results:
+        c.result(result)
     return c.image()
 
 

@@ -68,3 +68,32 @@ def test_done_items_are_kept_and_checked():
 def test_description_shown_only_when_present():
     msg = build_message([_item(date(2026, 9, 30), "Taak", description="Rekenmachine meebrengen")], TUESDAY)
     assert "Rekenmachine meebrengen" in msg
+
+
+def test_results_message():
+    import json
+    from pathlib import Path
+
+    from message import build_results_message
+    from results import normalize_result
+
+    raws = json.loads((Path(__file__).parent / "fixtures" / "results.json").read_text(encoding="utf8"))
+    results = [normalize_result(raws[i]) for i in (2, 1, 5)]
+    assert build_results_message(results) == "\n".join(
+        [
+            "🎓 New results",
+            "",
+            "🙂 Nederlands · 14,5/20 (73%) (doesn't count)",
+            "   Spelling werkwoorden",
+            "   Taken Thursday 1 October",
+            "",
+            "😞 Frans · 4/10 (40%)",
+            "   Test Verbes colonne 2",
+            "   Taken Friday 2 October",
+            "   💬 Au travail! Herhaal de werkwoorden.",
+            "",
+            "• Engels · Goed",
+            "   Presentatie",
+            "   Taken Wednesday 7 October",
+        ]
+    )
