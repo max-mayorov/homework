@@ -86,14 +86,14 @@ def normalize_all(raws: list[dict], today: date) -> list[Item]:
     return sorted(items, key=lambda i: (i.due, i.due_time or "", i.subject, i.title))
 
 
-def to_plain(obj):
-    """Turn the library's (pydantic) dataclasses into plain dicts/lists, skipping the session."""
+def to_plain(obj, skip: tuple[str, ...] = ("session",)):
+    """Turn the library's (pydantic) dataclasses into plain dicts/lists, leaving out the fields named in `skip`."""
     if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
-        return {f.name: to_plain(getattr(obj, f.name)) for f in dataclasses.fields(obj) if f.name != "session"}
+        return {f.name: to_plain(getattr(obj, f.name), skip) for f in dataclasses.fields(obj) if f.name not in skip}
     if isinstance(obj, dict):
-        return {str(k): to_plain(v) for k, v in obj.items()}
+        return {str(k): to_plain(v, skip) for k, v in obj.items()}
     if isinstance(obj, (list, tuple, set)):
-        return [to_plain(v) for v in obj]
+        return [to_plain(v, skip) for v in obj]
     if isinstance(obj, (date, datetime)):
         return obj.isoformat()
     if isinstance(obj, Enum):

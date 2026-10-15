@@ -1,0 +1,44 @@
+[
+  {
+    "identifier": "1_100_0_normal_1", "type": "normal", "name": "Test hoofdstuk 1",
+    "graphic": {"type": "percentage", "color": "olive", "value": 95, "description": "19/20"},
+    "date": "2026-10-05T00:00:00+02:00", "availability_date": "2026-10-13T16:00:00+02:00",
+    "courses": [{"name": "Wiskunde"}], "feedback": [], "feedbacks": [],
+    "is_published": true, "does_count": true, "deleted": false
+  },
+  {
+    "identifier": "1_101_0_normal_2", "type": "normal", "name": "Test Verbes colonne 2",
+    "graphic": {"type": "percentage", "color": "red", "value": 40, "description": "4/10"},
+    "date": "2026-10-02T00:00:00+02:00", "availability_date": "2026-10-12T09:47:02+02:00",
+    "courses": [{"name": "Frans"}], "feedback": [{"text": " Au travail! Herhaal de werkwoorden. ", "user": {}}], "feedbacks": [],
+    "is_published": true, "does_count": true, "deleted": false
+  },
+  {
+    "identifier": "1_102_0_normal_3", "type": "normal", "name": "Spelling werkwoorden",
+    "graphic": {"type": "percentage", "color": "green", "value": 73, "description": "14,5/20"},
+    "date": "2026-10-01T00:00:00+02:00", "availability_date": "2026-10-08T07:51:20+02:00",
+    "courses": [{"name": "Nederlands"}], "feedback": [], "feedbacks": [],
+    "is_published": true, "does_count": false, "deleted": false
+  },
+  {
+    "identifier": "1_103_0_normal_4", "type": "normal", "name": "Oefentoets",
+    "graphic": {"type": "percentage", "color": "yellow", "value": 60, "description": "6/10"},
+    "date": "2026-09-10T00:00:00+02:00", "availability_date": "2026-09-15T12:00:00+02:00",
+    "courses": [{"name": "STEM"}], "feedback": [], "feedbacks": [],
+    "is_published": true, "does_count": true, "deleted": false
+  },
+  {
+    "identifier": "1_104_0_normal_5", "type": "normal", "name": "Verwijderde toets",
+    "graphic": {"type": "percentage", "color": "green", "value": 80, "description": "8/10"},
+    "date": "2026-10-06T00:00:00+02:00", "availability_date": "2026-10-13T12:00:00+02:00",
+    "courses": [{"name": "Muziek"}], "feedback": [], "feedbacks": [],
+    "is_published": true, "does_count": true, "deleted": true
+  },
+  {
+    "identifier": "1_105_0_normal_6", "type": "normal", "name": "Presentatie",
+    "graphic": {"type": "text", "color": "steel", "value": "Goed", "description": ""},
+    "date": "2026-10-07T00:00:00+02:00", "availability_date": "2026-10-14T10:00:00+02:00",
+    "courses": [{"name": "Engels"}], "feedback": [], "feedbacks": [],
+    "is_published": true, "does_count": true, "deleted": false
+  }
+]

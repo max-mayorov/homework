@@ -7,9 +7,9 @@
 # 1. installs system packages (Python venv, fonts for the receipt printer, cron)
 # 2. creates .venv and installs the Python requirements
 # 3. creates .env from .env.example on the first run, then stops so you can fill it in
-# 4. checks the settings with a dry run (prints the report here, sends nothing)
-# 5. adds an hourly cron entry for cron.sh, which runs the check at 18:00 Brussels time,
-#    except Fridays
+# 4. checks the settings with a dry run (prints the reports here, sends nothing)
+# 5. adds an hourly cron entry for cron.sh, which runs the homework check at 15:05 Brussels time
+#    (except Fridays) and the results check at 16:05
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -71,17 +71,17 @@ if [ -f .env ]; then
     fi
 fi
 
-step "Dry run (logs in to Smartschool and prints the report here; nothing is sent)"
-if ! as_owner .venv/bin/python main.py --dry-run; then
+step "Dry run (logs in to Smartschool and prints both reports here; nothing is sent)"
+if ! as_owner .venv/bin/python main.py --dry-run || ! as_owner .venv/bin/python main.py --results --dry-run; then
     echo "The dry run failed, so the schedule was not installed. Fix the error above and run this script again." >&2
     exit 1
 fi
 
-step "Scheduling: cron.sh every hour; it runs the check at 18:00 Europe/Brussels, except Fridays"
+step "Scheduling: cron.sh every hour; homework at 15:05 Europe/Brussels (not Fridays), results at 16:05"
 chmod +x cron.sh
 touch homework.log
 chown "$OWNER": homework.log
-cron_line="0 * * * * $DIR/cron.sh >> $DIR/homework.log 2>&1 $CRON_MARKER"
+cron_line="5 * * * * $DIR/cron.sh >> $DIR/homework.log 2>&1 $CRON_MARKER"
 { crontab -u "$OWNER" -l 2>/dev/null | grep -vF "$CRON_MARKER" || true; echo "$cron_line"; } | crontab -u "$OWNER" -
 echo "Cron entry for user $OWNER:"
 echo "    $cron_line"
@@ -93,8 +93,9 @@ cat <<EOF
 
 Done. Useful commands:
     cd $DIR
-    ${sudo_}.venv/bin/python main.py --dry-run   # preview the report
-    ${sudo_}.venv/bin/python main.py             # send it now (Telegram, and printer if PRINTER_ADDRESS is set)
+    ${sudo_}.venv/bin/python main.py --dry-run             # preview the homework report
+    ${sudo_}.venv/bin/python main.py                       # send it now (Telegram, and printer if PRINTER_ADDRESS is set)
+    ${sudo_}.venv/bin/python main.py --results --dry-run   # preview the new results
     tail $DIR/homework.log               # what the scheduled runs did
     ${sudo_}git pull && sudo ./install.sh   # update
 EOF
