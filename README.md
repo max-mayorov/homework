@@ -2,14 +2,17 @@
 
 Every afternoon this checks your child's Smartschool planner and sends you a Telegram message: what's due on the next school day, with tests flagged, and what's coming up in the next 7 days. An hour later it checks Smartschool's "Resultaten" and, if new results came in, sends you those with their scores. The teacher's text is shown as written (usually Dutch or French); there's no AI step.
 
+The reports' logic is shared with the Home Assistant integration (see "Home Assistant" below) and lives in its folder, `custom_components/smartschool_homework/homework/`. This app runs it without Home Assistant:
+
 ```
-fetch.py    Smartschool planner  →  list of Item(subject, title, description, due, type)
-results.py  Smartschool results  →  list of new Result(subject, name, score, colour, taken, feedback)
-message.py  items / results      →  plain-text message
-notify.py   message              →  Telegram (split at 4096 characters)
-printer.py  items / results      →  black-and-white receipt image → 80 mm ESC/POS network printer (optional)
-main.py     runs the steps; any failure is sent to you as a short Telegram message
-probe.py    one-off diagnostic: dumps raw Smartschool data for the next 7 days
+homework/fetch.py    Smartschool planner  →  list of Item(subject, title, description, due, type)
+homework/results.py  Smartschool results  →  list of new Result(subject, name, score, colour, taken, feedback)
+homework/message.py  items / results      →  plain-text message
+homework/notify.py   message              →  Telegram (split at 4096 characters)
+homework/printer.py  items / results      →  black-and-white receipt image → 80 mm ESC/POS network printer (optional)
+main.py              runs the steps; any failure is sent to you as a short Telegram message
+config.py            reads the settings from .env or credentials.yml
+probe.py             one-off diagnostic: dumps raw Smartschool data for the next 7 days
 ```
 
 It uses the unofficial [`smartschool`](https://github.com/svaningelgem/smartschool) library. That library has no parent support as such, but a parent login (your child's username plus your own password) works. For a parent login the **planner** (`PlannedElements`) and the **results** (`Results`) return data. `FutureTasks` and the agenda lessons come back empty, so the app doesn't use them.
@@ -147,6 +150,10 @@ If `PRINTER_ADDRESS` is set, each run also prints the report on an 80 mm thermal
 
 The app only needs outbound HTTPS access to your school's `*.smartschool.be` host, and `api.telegram.org`, plus TCP to the printer if you use one. Nothing about it is tied to a particular host.
 
+## Home Assistant
+
+There's also a Home Assistant integration that sends the same reports, started from HA buttons and automations instead of cron. It's a separate setup: see [custom_components/smartschool_homework/README.md](custom_components/smartschool_homework/README.md).
+
 ## Privacy
 
 - The log shows only counts, the model name and step names, never homework text or names. The smartschool library logs the username at INFO level; that's filtered out.
@@ -162,4 +169,4 @@ The app only needs outbound HTTPS access to your school's `*.smartschool.be` hos
 - If a teacher changes a score after publishing it, the change isn't reported again: Smartschool keeps the original publication time.
 - Smartschool also has `steel` and `grass` score colours, which haven't been seen in use. They get a plain • instead of a smiley.
 - The class average isn't shown: reading it takes an extra request per result, and the library fails to parse it for some schools.
-- Item types come from the school's own labels (`Toets`, `Grote toets` → ⚠️ TEST; `Taak`, `Opdracht`, `Les leren` → homework; `Meebrengen` → bring; anything else → other). If your school uses other labels, add them in `fetch.py`.
+- Item types come from the school's own labels (`Toets`, `Grote toets` → ⚠️ TEST; `Taak`, `Opdracht`, `Les leren` → homework; `Meebrengen` → bring; anything else → other). If your school uses other labels, add them in `custom_components/smartschool_homework/homework/fetch.py`.

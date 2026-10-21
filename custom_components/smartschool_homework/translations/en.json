@@ -1,0 +1,156 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Smartschool account",
+        "description": "Log in the same way as the parent: your child's username with your own parent password.",
+        "data": {
+          "main_url": "School host",
+          "username": "Child's username",
+          "password": "Parent password",
+          "mfa": "Birthday or authenticator secret"
+        },
+        "data_description": {
+          "main_url": "Just the host, e.g. myschool.smartschool.be",
+          "mfa": "The birthday Smartschool asks for, as YYYY-MM-DD, or a Google Authenticator secret"
+        }
+      },
+      "reconfigure": {
+        "title": "Smartschool account",
+        "description": "Update the login. It must be the same child's account.",
+        "data": {
+          "main_url": "School host",
+          "username": "Child's username",
+          "password": "Parent password",
+          "mfa": "Birthday or authenticator secret"
+        },
+        "data_description": {
+          "main_url": "Just the host, e.g. myschool.smartschool.be",
+          "mfa": "The birthday Smartschool asks for, as YYYY-MM-DD, or a Google Authenticator secret"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Smartschool didn't accept the login. Check the username, password and birthday or secret.",
+      "cannot_connect": "Couldn't reach the school's Smartschool. Check the school host.",
+      "unknown": "Unexpected error; see the Home Assistant log."
+    },
+    "abort": {
+      "already_configured": "This Smartschool account is already set up.",
+      "reconfigure_successful": "The login was updated.",
+      "wrong_account": "That's a different account. Add it as a new entry instead."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Where to send reports",
+        "description": "Both are optional: leave a field empty to not use it. Telegram messages go through Home Assistant's Telegram bot integration: set that up first and add the chat to it, then pick the chat here. The Telegram and Print receipt switches turn each one on or off.",
+        "data": {
+          "telegram_chat": "Telegram chat",
+          "printer_address": "Receipt printer address",
+          "printer_font": "Receipt font (.ttf path)",
+          "printer_font_bold": "Receipt bold font (.ttf path)"
+        },
+        "data_description": {
+          "telegram_chat": "A chat of the Telegram bot integration. Only shown once that integration has a chat.",
+          "printer_address": "80 mm ESC/POS network printer, as host or host:port (port 9100 if left out)",
+          "printer_font": "Only if the receipt text looks wrong; the default is DejaVu Sans if found"
+        }
+      }
+    },
+    "error": {
+      "invalid_printer_address": "Use host, host:port or [IPv6]:port, with a port from 1 to 65535, e.g. 192.168.1.50 or 192.168.1.50:9100."
+    }
+  },
+  "entity": {
+    "button": {
+      "homework_report": {
+        "name": "Send homework report"
+      },
+      "results_report": {
+        "name": "Send results report"
+      }
+    },
+    "switch": {
+      "telegram": {
+        "name": "Telegram"
+      },
+      "printing": {
+        "name": "Print receipt"
+      }
+    }
+  },
+  "services": {
+    "send_homework_report": {
+      "name": "Send homework report",
+      "description": "Sends what's due on the next school day and the rest of the coming week. Returns the report's text when asked for a response.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with more than one Smartschool account."
+        },
+        "date": {
+          "name": "Today",
+          "description": "Pretend today is this date. Leave empty for today."
+        },
+        "telegram": {
+          "name": "Telegram",
+          "description": "Send to Telegram. Leave empty to follow the Telegram switch."
+        },
+        "print": {
+          "name": "Print",
+          "description": "Print the receipt. Leave empty to follow the Print receipt switch."
+        }
+      }
+    },
+    "send_results_report": {
+      "name": "Send results report",
+      "description": "Sends the results published since the last results report (at most 14 days back). Nothing is sent if there are none. Returns the report's text when asked for a response.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with more than one Smartschool account."
+        },
+        "since": {
+          "name": "Since",
+          "description": "Report results published since this date, instead of since the last report."
+        },
+        "telegram": {
+          "name": "Telegram",
+          "description": "Send to Telegram. Leave empty to follow the Telegram switch."
+        },
+        "print": {
+          "name": "Print",
+          "description": "Print the receipt. Leave empty to follow the Print receipt switch."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "report_failed": {
+      "message": "{report} report failed while {step}: {error}"
+    },
+    "telegram_not_set_up": {
+      "message": "Telegram isn't set up: pick a Telegram chat in the integration's options."
+    },
+    "printer_not_set_up": {
+      "message": "The receipt printer isn't set up: add its address in the integration's options."
+    },
+    "nowhere_to_send": {
+      "message": "Nowhere to send the report: Telegram and printing are both off or not set up."
+    },
+    "entry_not_found": {
+      "message": "No loaded Smartschool Homework entry with id {entry_id}."
+    },
+    "pick_entry": {
+      "message": "There's more than one Smartschool account: pick one with config_entry_id."
+    },
+    "not_set_up": {
+      "message": "Smartschool Homework isn't set up."
+    },
+    "telegram_chat_gone": {
+      "message": "The Telegram chat chosen for reports is no longer set up in the Telegram bot integration: pick a chat again in this integration's options."
+    }
+  }
+}

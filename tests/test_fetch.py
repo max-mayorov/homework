@@ -2,7 +2,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-from fetch import Item, classify, normalize_all, normalize_planned_element
+from homework.fetch import Item, classify, normalize_all, normalize_planned_element
 
 RAWS = json.loads((Path(__file__).parent / "fixtures" / "planned_elements.json").read_text(encoding="utf8"))
 TODAY = date(2026, 9, 29)

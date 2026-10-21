@@ -36,18 +36,3 @@ def load_settings() -> dict[str, str]:
 
     return settings
 
-
-def smartschool_credentials(settings: dict[str, str]):
-    from smartschool import AppCredentials
-
-    missing = [f for f in SMARTSCHOOL_FIELDS if not settings.get(f"SMARTSCHOOL_{f.upper()}")]
-    if missing:
-        raise RuntimeError(f"Missing Smartschool settings: {', '.join('SMARTSCHOOL_' + m.upper() for m in missing)}")
-
-    main_url = settings["SMARTSCHOOL_MAIN_URL"].removeprefix("https://").removeprefix("http://").strip("/")
-    return AppCredentials(
-        username=settings["SMARTSCHOOL_USERNAME"],
-        password=settings["SMARTSCHOOL_PASSWORD"],
-        main_url=main_url,
-        mfa=settings["SMARTSCHOOL_MFA"],
-    )

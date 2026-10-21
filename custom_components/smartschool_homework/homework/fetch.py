@@ -106,7 +106,7 @@ def to_plain(obj, skip: tuple[str, ...] = ("session",)):
 def fetch(settings: dict[str, str], today: date) -> list[Item]:
     from smartschool import PlannedElements, Smartschool
 
-    from config import smartschool_credentials
+    from .credentials import smartschool_credentials
 
     session = Smartschool(smartschool_credentials(settings))
     start = datetime.combine(today + timedelta(days=1), time.min, TZ)

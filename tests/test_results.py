@@ -2,8 +2,8 @@ import json
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from fetch import TZ
-from results import Result, load_last_run, new_results, normalize_result, save_last_run, window_start
+from homework.fetch import TZ
+from homework.results import Result, new_results, normalize_result, window_start
 
 RAWS = json.loads((Path(__file__).parent / "fixtures" / "results.json").read_text(encoding="utf8"))
 NOW = datetime(2026, 10, 15, 16, 5, tzinfo=TZ)
@@ -52,12 +52,3 @@ def test_results_published_after_now_wait_for_the_next_run():
     names = [r.name for r in new_results(RAWS, at_publication - timedelta(hours=1), at_publication)]
     assert names == ["Test hoofdstuk 1"]  # published exactly at `now` counts
     assert new_results(RAWS, at_publication, at_publication + timedelta(minutes=5)) == []
-
-
-def test_last_run_round_trip(tmp_path):
-    path = tmp_path / "last_results_run.txt"
-    assert load_last_run(path) is None
-    save_last_run(NOW, path)
-    assert load_last_run(path) == NOW
-    path.write_text("garbage", encoding="utf8")
-    assert load_last_run(path) is None

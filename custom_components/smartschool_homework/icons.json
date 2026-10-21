@@ -1,0 +1,16 @@
+{
+  "entity": {
+    "button": {
+      "homework_report": { "default": "mdi:book-open-variant" },
+      "results_report": { "default": "mdi:school" }
+    },
+    "switch": {
+      "telegram": { "default": "mdi:send" },
+      "printing": { "default": "mdi:printer-pos" }
+    }
+  },
+  "services": {
+    "send_homework_report": { "service": "mdi:book-open-variant" },
+    "send_results_report": { "service": "mdi:school" }
+  }
+}

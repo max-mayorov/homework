@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import date
 from itertools import groupby
 
-from fetch import next_school_day
-from results import FACES
+from .fetch import next_school_day
+from .results import FACES
 
 NOTHING_AT_ALL = "Nothing due for the next school day, and nothing on the planner for the coming week."
 
