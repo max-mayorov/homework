@@ -97,31 +97,30 @@ async def test_service_returns_the_report_without_sending(hass: HomeAssistant):
     assert response["message"].startswith("📚 Due Wednesday 30 September")
 
 
-async def test_printer_failure_still_sends_telegram_and_reports_it(hass: HomeAssistant):
+async def test_printer_failure_still_sends_telegram_and_raises_one_error(hass: HomeAssistant):
     await setup(hass, dict(TELEGRAM, **PRINTER))
     sent = []
     with (
         patch(f"{REPORTER}.fetch", return_value=[ITEM]),
         patch(f"{REPORTER}.send", side_effect=lambda s, text: sent.append(text)),
         patch(f"{REPORTER}.print_image", side_effect=PrinterError("Could not print to 10.0.0.9:9100")),
-        pytest.raises(HomeAssistantError, match="failed while printing"),
+        pytest.raises(HomeAssistantError, match="Homework report failed while printing: PrinterError: Could not print"),
     ):
         await hass.services.async_call(DOMAIN, "send_homework_report", {}, blocking=True)
-    assert len(sent) == 2
-    assert sent[1].startswith("⚠️ Homework check failed while printing.")
+    assert len(sent) == 1  # the report; the error isn't sent to Telegram
+    assert "Verbes colonne 4" in sent[0]
 
 
-async def test_fetch_failure_is_redacted_and_sent_to_telegram(hass: HomeAssistant):
+async def test_fetch_failure_is_redacted_and_not_sent_to_telegram(hass: HomeAssistant):
     await setup(hass, TELEGRAM)
-    sent = []
     with (
         patch(f"{REPORTER}.fetch", side_effect=RuntimeError("login failed for hunter22")),
-        patch(f"{REPORTER}.send", side_effect=lambda s, text: sent.append(text)),
+        patch(f"{REPORTER}.send") as send,
         pytest.raises(HomeAssistantError) as raised,
     ):
         await hass.services.async_call(DOMAIN, "send_homework_report", {}, blocking=True)
-    assert "hunter22" not in str(raised.value)
-    assert sent == ["⚠️ Homework check failed while fetching from Smartschool.\nRuntimeError: login failed for ***"]
+    assert str(raised.value) == "Homework report failed while fetching from Smartschool: RuntimeError: login failed for ***"
+    send.assert_not_called()
 
 
 async def test_results_report_starts_after_the_last_delivered_one(hass: HomeAssistant):
@@ -144,14 +143,23 @@ async def test_results_report_starts_after_the_last_delivered_one(hass: HomeAssi
         send.assert_called_once()  # nothing new: nothing sent
 
 
-def test_smartschool_does_not_take_over_logging():
+def test_library_logs_go_to_the_integration_logger():
     # In a fresh interpreter, imported the way Home Assistant imports the integration
     code = """
 import logging, sys
-import custom_components.smartschool_homework.core
+import custom_components.smartschool_homework
 import smartschool
+from smartschool import _session
 assert not hasattr(sys.modules["logprise"], "appriser"), "the real logprise was imported"
 assert not hasattr(logging.Logger._log, "_intercepted_by_logprise"), "logging was taken over"
+
+records = []
+handler = logging.Handler()
+handler.emit = records.append
+logging.getLogger("custom_components.smartschool_homework").addHandler(handler)
+logging.getLogger("custom_components.smartschool_homework").setLevel(logging.DEBUG)
+_session.logger.info("Logging in with {}", "kid")
+assert [(r.name, r.getMessage()) for r in records] == [("custom_components.smartschool_homework.smartschool", "Logging in with kid")], records
 """
     root = Path(__file__).resolve().parent.parent
     subprocess.run([sys.executable, "-c", code], cwd=root, check=True)

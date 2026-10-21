@@ -16,6 +16,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
+from . import library_logging
 from .const import (
     ATTR_CONFIG_ENTRY_ID,
     ATTR_DATE,
@@ -27,6 +28,9 @@ from .const import (
     SERVICE_RESULTS_REPORT,
 )
 from .reporter import Reporter
+
+# The smartschool library is only imported when it's used (in the executor), so this runs first
+library_logging.install()
 
 PLATFORMS = [Platform.BUTTON, Platform.SWITCH]
 
@@ -65,9 +69,9 @@ def _reporter(hass: HomeAssistant, call: ServiceCall) -> Reporter:
     if entry_id := call.data.get(ATTR_CONFIG_ENTRY_ID):
         loaded = [e for e in loaded if e.entry_id == entry_id]
         if not loaded:
-            raise ServiceValidationError(f"No loaded Smartschool Homework entry with id {entry_id}")
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="entry_not_found", translation_placeholders={"entry_id": entry_id})
     elif len(loaded) != 1:
-        raise ServiceValidationError("Pick the Smartschool account with config_entry_id" if loaded else "Smartschool Homework isn't set up")
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="pick_entry" if loaded else "not_set_up")
     return loaded[0].runtime_data
 
 

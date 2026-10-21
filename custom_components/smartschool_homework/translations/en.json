@@ -67,12 +67,20 @@
   },
   "entity": {
     "button": {
-      "homework_report": { "name": "Send homework report" },
-      "results_report": { "name": "Send results report" }
+      "homework_report": {
+        "name": "Send homework report"
+      },
+      "results_report": {
+        "name": "Send results report"
+      }
     },
     "switch": {
-      "telegram": { "name": "Telegram" },
-      "printing": { "name": "Print receipt" }
+      "telegram": {
+        "name": "Telegram"
+      },
+      "printing": {
+        "name": "Print receipt"
+      }
     }
   },
   "services": {
@@ -80,21 +88,68 @@
       "name": "Send homework report",
       "description": "Sends what's due on the next school day and the rest of the coming week. Returns the report's text when asked for a response.",
       "fields": {
-        "config_entry_id": { "name": "Account", "description": "Only needed with more than one Smartschool account." },
-        "date": { "name": "Today", "description": "Pretend today is this date. Leave empty for today." },
-        "telegram": { "name": "Telegram", "description": "Send to Telegram. Leave empty to follow the Telegram switch." },
-        "print": { "name": "Print", "description": "Print the receipt. Leave empty to follow the Print receipt switch." }
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with more than one Smartschool account."
+        },
+        "date": {
+          "name": "Today",
+          "description": "Pretend today is this date. Leave empty for today."
+        },
+        "telegram": {
+          "name": "Telegram",
+          "description": "Send to Telegram. Leave empty to follow the Telegram switch."
+        },
+        "print": {
+          "name": "Print",
+          "description": "Print the receipt. Leave empty to follow the Print receipt switch."
+        }
       }
     },
     "send_results_report": {
       "name": "Send results report",
       "description": "Sends the results published since the last results report (at most 14 days back). Nothing is sent if there are none. Returns the report's text when asked for a response.",
       "fields": {
-        "config_entry_id": { "name": "Account", "description": "Only needed with more than one Smartschool account." },
-        "since": { "name": "Since", "description": "Report results published since this date, instead of since the last report." },
-        "telegram": { "name": "Telegram", "description": "Send to Telegram. Leave empty to follow the Telegram switch." },
-        "print": { "name": "Print", "description": "Print the receipt. Leave empty to follow the Print receipt switch." }
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with more than one Smartschool account."
+        },
+        "since": {
+          "name": "Since",
+          "description": "Report results published since this date, instead of since the last report."
+        },
+        "telegram": {
+          "name": "Telegram",
+          "description": "Send to Telegram. Leave empty to follow the Telegram switch."
+        },
+        "print": {
+          "name": "Print",
+          "description": "Print the receipt. Leave empty to follow the Print receipt switch."
+        }
       }
+    }
+  },
+  "exceptions": {
+    "report_failed": {
+      "message": "{report} report failed while {step}: {error}"
+    },
+    "telegram_not_set_up": {
+      "message": "Telegram isn't set up: add the bot token and chat id in the integration's options."
+    },
+    "printer_not_set_up": {
+      "message": "The receipt printer isn't set up: add its address in the integration's options."
+    },
+    "nowhere_to_send": {
+      "message": "Nowhere to send the report: Telegram and printing are both off or not set up."
+    },
+    "entry_not_found": {
+      "message": "No loaded Smartschool Homework entry with id {entry_id}."
+    },
+    "pick_entry": {
+      "message": "There's more than one Smartschool account: pick one with config_entry_id."
+    },
+    "not_set_up": {
+      "message": "Smartschool Homework isn't set up."
     }
   }
 }

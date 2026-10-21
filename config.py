@@ -5,6 +5,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import yaml
+from dotenv import load_dotenv
+
 HERE = Path(__file__).resolve().parent
 
 SMARTSCHOOL_FIELDS = ("username", "password", "main_url", "mfa")
@@ -17,10 +20,6 @@ def load_settings() -> dict[str, str]:
     credentials.yml uses the smartschool library's lower-case keys (username, password, ...)
     for the Smartschool fields, and upper-case env-style keys for anything else.
     """
-    # Imported here: the Home Assistant integration only uses smartschool_credentials, and doesn't install python-dotenv
-    import yaml
-    from dotenv import load_dotenv
-
     load_dotenv(HERE / ".env", interpolate=False)  # keep "${" in passwords literal
     settings: dict[str, str] = {}
 

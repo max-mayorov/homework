@@ -5,6 +5,11 @@
 
 The modules at the top of the repo are the originals: edit those, then run this. Imports
 between them become relative imports (`from fetch import TZ` -> `from .fetch import TZ`).
+
+Only the business logic is copied. The app's wrapping (config.py's .env loading, main.py's
+logging, error reporting and command line, cron.sh) stays with the app; the integration has its
+own. In particular core/config.py is the integration's own, not a copy: fetch() and
+fetch_results() get their Smartschool login from it.
 """
 
 from __future__ import annotations
@@ -15,9 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CORE = ROOT / "custom_components" / "smartschool_homework" / "core"
-MODULES = ("config", "errors", "fetch", "message", "notify", "printer", "results")
+MODULES = ("fetch", "message", "notify", "printer", "results")
 
-_IMPORT = re.compile(rf"^(\s*)from ({'|'.join(MODULES)}) import ", re.MULTILINE)
+_IMPORT = re.compile(rf"^(\s*)from ({'|'.join(MODULES + ('config',))}) import ", re.MULTILINE)
 
 
 def generated(name: str) -> str:

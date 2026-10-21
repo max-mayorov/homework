@@ -9,9 +9,7 @@ message.py  items / results      →  plain-text message
 notify.py   message              →  Telegram (split at 4096 characters)
 printer.py  items / results      →  black-and-white receipt image → 80 mm ESC/POS network printer (optional)
 main.py     runs the steps; any failure is sent to you as a short Telegram message
-errors.py   failure  →  short error message with secrets masked
 probe.py    one-off diagnostic: dumps raw Smartschool data for the next 7 days
-custom_components/smartschool_homework   the same reports as a Home Assistant integration (see "Home Assistant")
 ```
 
 It uses the unofficial [`smartschool`](https://github.com/svaningelgem/smartschool) library. That library has no parent support as such, but a parent login (your child's username plus your own password) works. For a parent login the **planner** (`PlannedElements`) and the **results** (`Results`) return data. `FutureTasks` and the agenda lessons come back empty, so the app doesn't use them.
@@ -151,97 +149,7 @@ The app only needs outbound HTTPS access to your school's `*.smartschool.be` hos
 
 ## Home Assistant
 
-Instead of the Raspberry Pi setup, you can run the reports from Home Assistant with the **Smartschool Homework** integration in `custom_components/smartschool_homework`. It sends the same reports to the same Telegram chat and receipt printer, but you start them from HA: from buttons on a dashboard, or from your own automations. The integration has no schedule of its own.
-
-Use one or the other, not both: with the Pi cron job running as well, you'd get every report twice.
-
-### Install
-
-With [HACS](https://hacs.xyz): **HACS → ⋮ → Custom repositories**, add `https://github.com/max-mayorov/homework` with type **Integration**, then download **Smartschool Homework** and restart Home Assistant.
-
-Without HACS: copy the `custom_components/smartschool_homework` folder into the `custom_components` folder of your HA config (create it if needed), and restart Home Assistant.
-
-Needs Home Assistant 2024.12 or newer.
-
-### Set up
-
-1. **Settings → Devices & services → Add integration → Smartschool Homework.**
-2. Fill in the school host, your child's username, **your** parent password, and the birthday (`YYYY-MM-DD`) or authenticator secret. These are the same as the `SMARTSCHOOL_*` settings above. HA logs in once to check them.
-3. Open the integration's **Configure** to add Telegram (bot token and chat id, see "Create the Telegram bot") and/or the receipt printer's address. Both are optional. If the receipt text looks wrong, you can also give paths to `.ttf` fonts here.
-
-To change the password later, use **⋮ → Reconfigure** on the integration.
-
-### What you get
-
-| Entity | What it does |
-|---|---|
-| `button.…_send_homework_report` | sends the Homework report now |
-| `button.…_send_results_report` | sends the new Results now; nothing if there are none |
-| `switch.…_telegram` | whether reports go to Telegram |
-| `switch.…_print_receipt` | whether reports are printed |
-
-A switch is unavailable until its channel is set up in **Configure**. Pressing a button with both switches off gives an error instead of doing nothing.
-
-When something fails (login, Telegram, the printer), the button or action shows the error, it's written to the HA log, and, if Telegram is on, it's sent to Telegram as well, with secrets masked. As with the Pi setup, Telegram and the printer are independent: if printing fails, the Telegram report still goes out.
-
-### Actions (services)
-
-`smartschool_homework.send_homework_report` and `smartschool_homework.send_results_report` do what the buttons do. Optional fields:
-
-| Field | |
-|---|---|
-| `telegram`, `print` | `true`/`false` to override the switches for this call |
-| `date` | homework only: pretend today is this date (like `--date`) |
-| `since` | results only: report results published since this date (like `--since`) |
-| `config_entry_id` | only needed if you set up more than one Smartschool account |
-
-Both actions can return the report as a response (`message` with the text, and `count`). With `telegram: false` and `print: false` that's a preview, like `--dry-run`: nothing is sent, and the results bookkeeping isn't touched. You can use this to send the report through HA's own notifications instead of Telegram.
-
-### Schedule with automations
-
-The same schedule as the Pi (homework at 15:05 except Fridays, results at 16:05). HA uses its own timezone, so set it to Europe/Brussels or adjust the times.
-
-```yaml
-automation:
-  - alias: Homework report
-    triggers:
-      - trigger: time
-        at: "15:05:00"
-    conditions:
-      - condition: time
-        weekday: [mon, tue, wed, thu, sat, sun]
-    actions:
-      - action: smartschool_homework.send_homework_report
-
-  - alias: Results report
-    triggers:
-      - trigger: time
-        at: "16:05:00"
-    actions:
-      - action: smartschool_homework.send_results_report
-```
-
-To send the report to the HA companion app instead of Telegram:
-
-```yaml
-    actions:
-      - action: smartschool_homework.send_homework_report
-        data:
-          telegram: false
-        response_variable: report
-      - action: notify.mobile_app_your_phone
-        data:
-          title: Homework
-          message: "{{ report.message }}"
-```
-
-For results, only send when there's something new: add `- condition: template` with `value_template: "{{ report.count > 0 }}"` before the notify step. Note that with `telegram: false` and `print: false`, the results report is a preview and the next run reports the same results again. Leave the printer on (or set `print: true`) to make it count as delivered.
-
-### Notes
-
-- HA keeps the time of the last delivered results report in its own storage (`.storage/smartschool_homework.<entry id>`), not in `last_results_run.txt`.
-- The smartschool library's logging is routed into HA's normal log as the `smartschool` logger. (On its own it would take over all of Python's logging, which would break HA's log.) It logs the child's username at INFO level, which HA doesn't show by default.
-- The integration keeps a copy of the app's modules in `custom_components/smartschool_homework/core/`. If you change `fetch.py`, `message.py` or the others, run `python scripts/sync_ha_core.py` to update the copy; a unit test fails until you do. The integration's own tests need Home Assistant's test harness: `pip install -r requirements_ha_test.txt`, then `python -m pytest tests_ha`.
+There's also a Home Assistant integration that sends the same reports, started from HA buttons and automations instead of cron. It's a separate setup: see [custom_components/smartschool_homework/README.md](custom_components/smartschool_homework/README.md).
 
 ## Privacy
 

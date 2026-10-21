@@ -1,6 +1,7 @@
 """Build the Homework and Results reports and deliver them to Telegram and/or the receipt printer.
 
-The same steps as main.py, but called from buttons and service calls instead of cron. The
+Uses the app's business logic (core/), called from buttons and actions instead of cron. Failures
+are raised as Home Assistant errors, which HA shows or logs; they aren't sent to Telegram. The
 smartschool library, Telegram and the printer all block, so they run in the executor.
 """
 
@@ -28,7 +29,6 @@ from .const import (
     CONF_TELEGRAM_CHAT_ID,
     DOMAIN,
 )
-from .core.errors import error_message, redact
 from .core.fetch import TZ, fetch
 from .core.message import build_message, build_results_message
 from .core.notify import send
@@ -38,6 +38,9 @@ from .core.results import fetch_results, window_start
 _LOGGER = logging.getLogger(__name__)
 
 TELEGRAM, PRINTING = "sending to Telegram", "printing"
+
+# Masked in error messages
+SECRETS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "TELEGRAM_BOT_TOKEN")
 
 # Config entry keys -> the setting names the app's modules use
 SETTING_NAMES = {
@@ -85,13 +88,13 @@ class Reporter:
     def channels(self, telegram: bool | None, printing: bool | None, preview_ok: bool) -> tuple[bool, bool]:
         """Where to deliver: the switches, unless the call says otherwise. Raises if there's nowhere to deliver and `preview_ok` is False."""
         if telegram and not has_telegram(self.settings):
-            raise ServiceValidationError("Telegram isn't set up: add the bot token and chat id in the integration's options")
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="telegram_not_set_up")
         if printing and not has_printer(self.settings):
-            raise ServiceValidationError("The receipt printer isn't set up: add its address in the integration's options")
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="printer_not_set_up")
         telegram = (self.telegram_on if telegram is None else telegram) and has_telegram(self.settings)
         printing = (self.printing_on if printing is None else printing) and has_printer(self.settings)
         if not (telegram or printing or preview_ok):
-            raise ServiceValidationError("Nowhere to send the report: Telegram and printing are both off or not set up")
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="nowhere_to_send")
         return telegram, printing
 
     async def homework_report(self, today: date | None = None, telegram: bool | None = None, printing: bool | None = None, preview_ok: bool = False) -> dict[str, Any]:
@@ -105,10 +108,12 @@ class Reporter:
                 items = await self.hass.async_add_executor_job(fetch, settings, today)
                 step = "building the message"
                 text = build_message(items, today)
-            except Exception as exc:  # noqa: BLE001 - every failure must reach the parent
-                await self._fail(step, exc, "Homework", telegram)
-            failed = await self._deliver(text, lambda: render_report(items, today, settings), "Homework", telegram, printing)
-        self._raise_if_failed(failed, "Homework")
+            except Exception as exc:
+                raise self._error("Homework", {step: exc}) from exc
+            failed = await self._deliver(text, lambda: render_report(items, today, settings), telegram, printing)
+        if failed:
+            raise self._error("Homework", failed)
+        _LOGGER.debug("Homework report: %d item(s), Telegram %s, printing %s", len(items), telegram, printing)
         return {"message": text, "count": len(items)}
 
     async def results_report(self, since: date | None = None, telegram: bool | None = None, printing: bool | None = None, preview_ok: bool = False) -> dict[str, Any]:
@@ -123,14 +128,16 @@ class Reporter:
                 results = await self.hass.async_add_executor_job(fetch_results, settings, start, now)
                 step = "building the message"
                 text = build_results_message(results) if results else ""
-            except Exception as exc:  # noqa: BLE001 - every failure must reach the parent
-                await self._fail(step, exc, "Results", telegram)
-            failed = await self._deliver(text, lambda: render_results(results, settings, now), "Results", telegram, printing) if results else []
+            except Exception as exc:
+                raise self._error("Results", {step: exc}) from exc
+            failed = await self._deliver(text, lambda: render_results(results, settings, now), telegram, printing) if results else {}
             # Delivered once Telegram has it (or the printer, without Telegram); a preview doesn't count
             first = TELEGRAM if telegram else PRINTING if printing else None
             if first and first not in failed:
                 await self._store.async_save({"last_results_run": now.isoformat()})
-        self._raise_if_failed(failed, "Results")
+        if failed:
+            raise self._error("Results", failed)
+        _LOGGER.debug("Results report: %d new result(s) since %s, Telegram %s, printing %s", len(results), start, telegram, printing)
         return {"message": text, "count": len(results), "since": start.isoformat()}
 
     async def _load_last_run(self) -> datetime | None:
@@ -140,41 +147,36 @@ class Reporter:
         except (KeyError, ValueError):
             return None
 
-    async def _deliver(self, text: str, render: Callable[[], Any], check: str, telegram: bool, printing: bool) -> dict[str, BaseException]:
+    async def _deliver(self, text: str, render: Callable[[], Any], telegram: bool, printing: bool) -> dict[str, Exception]:
         """Send to Telegram and print, independently: one failing doesn't stop the other. Returns the failed steps."""
-        failed: dict[str, BaseException] = {}
+        failed: dict[str, Exception] = {}
         if telegram:
             try:
                 await self.hass.async_add_executor_job(send, self.settings, text)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 - reported with the printer's outcome
                 failed[TELEGRAM] = exc
         if printing:
             try:
                 img = await self.hass.async_add_executor_job(render)
                 await self.hass.async_add_executor_job(print_image, self.settings["PRINTER_ADDRESS"], img)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 - reported with Telegram's outcome
                 failed[PRINTING] = exc
-                if telegram and TELEGRAM not in failed:
-                    await self._send_error(error_message(PRINTING, exc, self.settings, check))
         return failed
 
-    def _raise_if_failed(self, failed: dict[str, BaseException], check: str) -> None:
-        if failed:
-            messages = [error_message(step, exc, self.settings, check) for step, exc in failed.items()]
-            for message in messages:
-                _LOGGER.error("%s", message)
-            raise HomeAssistantError("\n".join(messages))
+    def _error(self, report: str, failed: dict[str, Exception]) -> HomeAssistantError:
+        """One error for the failed steps, with the configured secrets masked. Home Assistant logs or shows it."""
+        return HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="report_failed",
+            translation_placeholders={
+                "report": report,
+                "step": " and ".join(failed),
+                "error": self._redact("; ".join(f"{type(exc).__name__}: {exc}" for exc in failed.values())),
+            },
+        )
 
-    async def _fail(self, step: str, exc: BaseException, check: str, telegram: bool):
-        """Report a failure before anything was delivered: to Telegram if it's on, and as the call's error."""
-        message = error_message(step, exc, self.settings, check)
-        _LOGGER.error("%s", message)
-        if telegram:
-            await self._send_error(message)
-        raise HomeAssistantError(message) from None
-
-    async def _send_error(self, message: str) -> None:
-        try:
-            await self.hass.async_add_executor_job(send, self.settings, message)
-        except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Could not send the error to Telegram either: %s", redact(str(exc), self.settings))
+    def _redact(self, text: str) -> str:
+        for name in SECRETS:
+            if (value := self.settings.get(name)) and len(value) >= 3:
+                text = text.replace(value, "***")
+        return text

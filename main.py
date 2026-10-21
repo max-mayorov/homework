@@ -17,13 +17,14 @@ import sys
 from datetime import date, datetime, time
 
 from config import load_settings
-from errors import error_message, redact
 from fetch import TZ
 
 log = logging.getLogger("homework")
 
+SECRET_KEYS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "TELEGRAM_BOT_TOKEN")
 
-OWN_MODULES = {"__main__", "main", "config", "errors", "fetch", "message", "notify", "printer", "results"}
+
+OWN_MODULES = {"__main__", "main", "config", "fetch", "message", "notify", "printer", "results"}
 
 
 def _log_filter(record) -> bool:
@@ -46,6 +47,21 @@ def setup_logging() -> None:
     loguru_logger.add(sys.stderr, level="INFO", filter=_log_filter, diagnose=False, backtrace=False, format="{time:YYYY-MM-DD HH:mm:ss} {level} {name}: {message}")
     sys.excepthook = sys.__excepthook__
     logging.getLogger().setLevel(logging.INFO)
+
+
+def redact(text: str, settings: dict[str, str]) -> str:
+    for key in SECRET_KEYS:
+        value = settings.get(key)
+        if value and len(value) >= 3:
+            text = text.replace(value, "***")
+    return text
+
+
+def error_message(step: str, exc: BaseException, settings: dict[str, str], check: str = "Homework") -> str:
+    detail = redact(f"{type(exc).__name__}: {exc}", settings)
+    if len(detail) > 300:
+        detail = detail[:300] + "…"
+    return f"⚠️ {check} check failed while {step}.\n{detail}"
 
 
 PREVIEW_FILE = "print_preview.png"
