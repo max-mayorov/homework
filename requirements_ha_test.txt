@@ -1,0 +1,3 @@
+# Only for running tests_ha/ (the Home Assistant integration's tests); not needed to run the app.
+pytest-homeassistant-custom-component==0.13.316
+smartschool[mfa]==0.10.0
