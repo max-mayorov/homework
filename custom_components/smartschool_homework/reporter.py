@@ -1,6 +1,6 @@
 """Build the Homework and Results reports and deliver them to Telegram and/or the receipt printer.
 
-Uses the app's business logic (core/), called from buttons and actions instead of cron. Telegram
+Uses the reports' logic (the homework package), called from buttons and actions. Telegram
 messages go through Home Assistant's Telegram bot integration. Failures are raised as Home
 Assistant errors, which HA shows or logs; they aren't sent to Telegram. The smartschool library
 and the printer block, so they run in the executor.
@@ -30,11 +30,11 @@ from .const import (
     DOMAIN,
     TELEGRAM_BOT_DOMAIN,
 )
-from .core.fetch import TZ, fetch
-from .core.message import build_message, build_results_message
-from .core.notify import split_message
-from .core.printer import print_image, render_report, render_results
-from .core.results import fetch_results, window_start
+from .homework.fetch import TZ, fetch
+from .homework.message import build_message, build_results_message
+from .homework.notify import split_message
+from .homework.printer import print_image, render_report, render_results
+from .homework.results import fetch_results, window_start
 
 _LOGGER = logging.getLogger(__name__)
 

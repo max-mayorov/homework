@@ -32,8 +32,8 @@ from .const import (
     TELEGRAM_BOT_DOMAIN,
     TELEGRAM_CHAT_SUBENTRY,
 )
-from .core.fetch import TZ, fetch
-from .core.printer import parse_address
+from .homework.fetch import TZ, fetch
+from .homework.printer import parse_address
 from .reporter import to_settings
 
 _LOGGER = logging.getLogger(__name__)

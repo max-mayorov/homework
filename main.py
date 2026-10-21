@@ -1,5 +1,10 @@
 """Homework and results checks: fetch from Smartschool, build a report, send via Telegram (and print it if PRINTER_ADDRESS is set).
 
+The stand-alone way to run the Home Assistant integration's reports, without Home Assistant: the
+reports' logic is the integration's `homework` package (custom_components/smartschool_homework/
+homework); this file adds what HA would otherwise do (settings, logging, schedule via cron.sh,
+error messages to Telegram).
+
     python main.py                      # Homework report (sends to Telegram)
     python main.py --dry-run            # print the report instead of sending (and save
                                         # print_preview.png instead of printing)
@@ -15,22 +20,31 @@ import argparse
 import logging
 import sys
 from datetime import date, datetime, time
+from pathlib import Path
 
-from config import load_settings
-from fetch import TZ
+HERE = Path(__file__).resolve().parent
+# The reports' logic lives in the Home Assistant integration's folder, as the `homework` package
+sys.path.insert(0, str(HERE / "custom_components" / "smartschool_homework"))
+
+from config import load_settings  # noqa: E402
+from homework.fetch import TZ  # noqa: E402
 
 log = logging.getLogger("homework")
+
+# When the last Results report was delivered
+LAST_RUN_FILE = HERE / "last_results_run.txt"
 
 SECRET_KEYS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "TELEGRAM_BOT_TOKEN")
 
 
-OWN_MODULES = {"__main__", "main", "config", "fetch", "message", "notify", "printer", "results"}
+OWN_MODULES = {"__main__", "main", "config"}
 
 
 def _log_filter(record) -> bool:
-    # Our modules log non-sensitive progress at INFO; libraries (smartschool logs the username
-    # at INFO) only get through at WARNING and above.
-    return record["name"] in OWN_MODULES or record["level"].no >= logging.WARNING
+    # Our modules (and the homework package) log non-sensitive progress at INFO; libraries
+    # (smartschool logs the username at INFO) only get through at WARNING and above.
+    name = record["name"] or ""
+    return name in OWN_MODULES or name.startswith("homework.") or record["level"].no >= logging.WARNING
 
 
 def setup_logging() -> None:
@@ -68,7 +82,7 @@ PREVIEW_FILE = "print_preview.png"
 
 
 def report_failure(step: str, exc: BaseException, args, settings: dict[str, str], check: str = "Homework") -> None:
-    from notify import send
+    from homework.notify import send
 
     message = error_message(step, exc, settings, check)
     log.error("Failed while %s (%s)", step, type(exc).__name__)
@@ -82,9 +96,9 @@ def report_failure(step: str, exc: BaseException, args, settings: dict[str, str]
 
 
 def run(args, settings: dict[str, str]) -> int:
-    from fetch import fetch
-    from message import build_message
-    from printer import render_report
+    from homework.fetch import fetch
+    from homework.message import build_message
+    from homework.printer import render_report
 
     today: date = args.date or datetime.now(TZ).date()
     step = "fetching from Smartschool"
@@ -105,7 +119,7 @@ def deliver(text: str, render, args, settings: dict[str, str], check: str) -> li
 
     Telegram and the printer are independent: one failing doesn't stop the other.
     """
-    from notify import send
+    from homework.notify import send
 
     deliveries = [("sending to Telegram", lambda: print(text) if args.dry_run else send(settings, text))]
     printer_address = settings.get("PRINTER_ADDRESS", "").strip()
@@ -123,9 +137,9 @@ def deliver(text: str, render, args, settings: dict[str, str], check: str) -> li
 
 
 def run_results(args, settings: dict[str, str]) -> int:
-    from message import build_results_message
-    from printer import render_results
-    from results import fetch_results, load_last_run, save_last_run, window_start
+    from homework.message import build_results_message
+    from homework.printer import render_results
+    from homework.results import fetch_results, window_start
 
     now = datetime.now(TZ)
     since = datetime.combine(args.since, time.min, TZ) if args.since else window_start(load_last_run(), now)
@@ -151,8 +165,20 @@ def run_results(args, settings: dict[str, str]) -> int:
     return 1 if failed else 0
 
 
+def load_last_run(path: Path | None = None) -> datetime | None:
+    try:
+        value = datetime.fromisoformat((path or LAST_RUN_FILE).read_text(encoding="utf8").strip())
+    except (FileNotFoundError, ValueError):
+        return None
+    return value.astimezone(TZ) if value.tzinfo else value.replace(tzinfo=TZ)
+
+
+def save_last_run(when: datetime, path: Path | None = None) -> None:
+    (path or LAST_RUN_FILE).write_text(when.isoformat() + "\n", encoding="utf8")
+
+
 def print_report(img, address: str, args) -> None:
-    from printer import print_image
+    from homework.printer import print_image
 
     if args.dry_run:
         img.save(PREVIEW_FILE)

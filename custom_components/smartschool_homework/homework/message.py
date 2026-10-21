@@ -1,4 +1,3 @@
-# Copied from message.py at the top of the repo by scripts/sync_ha_core.py. Edit that file, not this one.
 """Build the Homework report and the Results report messages (no AI: teachers' text is shown as-is)."""
 
 from __future__ import annotations

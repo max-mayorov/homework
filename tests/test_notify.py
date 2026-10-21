@@ -1,4 +1,4 @@
-from notify import MAX_LEN, split_message
+from homework.notify import MAX_LEN, split_message
 
 
 def test_short_message_is_one_chunk():

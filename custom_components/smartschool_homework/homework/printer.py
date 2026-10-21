@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from fetch import TZ, next_school_day
+from .fetch import TZ, next_school_day
 
 log = logging.getLogger(__name__)
 

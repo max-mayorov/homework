@@ -1,7 +1,7 @@
 from datetime import date
 
-from fetch import Item, next_school_day
-from message import NOTHING_AT_ALL, build_message
+from homework.fetch import Item, next_school_day
+from homework.message import NOTHING_AT_ALL, build_message
 
 TUESDAY = date(2026, 9, 29)
 SATURDAY = date(2026, 10, 3)
@@ -74,8 +74,8 @@ def test_results_message():
     import json
     from pathlib import Path
 
-    from message import build_results_message
-    from results import normalize_result
+    from homework.message import build_results_message
+    from homework.results import normalize_result
 
     raws = json.loads((Path(__file__).parent / "fixtures" / "results.json").read_text(encoding="utf8"))
     results = [normalize_result(raws[i]) for i in (2, 1, 5)]

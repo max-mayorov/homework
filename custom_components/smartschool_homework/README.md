@@ -102,9 +102,11 @@ For results, only send when there's something new: add `- condition: template` w
 
 ## Development
 
-The integration reuses the app's business logic only: `fetch.py`, `results.py`, `message.py`, `notify.py` and `printer.py` are copied into `core/` by `python scripts/sync_ha_core.py`. Edit the originals at the top of the repo, then run it. Everything around them is the integration's own: setup and settings (`config_flow.py`, and `core/config.py` in place of the app's `.env` loading), logging (`library_logging.py`), error handling (`reporter.py`), and scheduling (HA automations).
+This integration is the main source of the reports. Their logic is the `homework` package in this folder: fetching from Smartschool (`fetch.py`, `results.py`), the messages (`message.py`), Telegram's message splitting (`notify.py`) and the receipt (`printer.py`). It must not import Home Assistant.
 
-Tests need Home Assistant's test harness. They include a check that `core/` matches the originals:
+The [stand-alone app](../../README.md) at the top of the repo runs the same reports without Home Assistant. It puts this folder on `sys.path` and imports `homework`, adding the parts HA would otherwise provide: settings from `.env`, logging, the cron schedule, and error messages to Telegram. Here, those parts are `config_flow.py`, `library_logging.py`, `reporter.py` and your automations.
+
+Tests: the app's tests (`python -m pytest`) cover the `homework` package. This integration's own tests need Home Assistant's test harness:
 
 ```bash
 pip install -r requirements_ha_test.txt

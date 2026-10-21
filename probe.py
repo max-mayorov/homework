@@ -19,7 +19,13 @@ import traceback
 from datetime import date, datetime, timedelta
 from enum import Enum
 
-from config import load_settings, smartschool_credentials
+from pathlib import Path
+
+# The reports' logic lives in the Home Assistant integration's folder, as the `homework` package
+sys.path.insert(0, str(Path(__file__).resolve().parent / "custom_components" / "smartschool_homework"))
+
+from config import load_settings  # noqa: E402
+from homework.credentials import smartschool_credentials  # noqa: E402
 
 DAYS = 7
 

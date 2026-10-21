@@ -1,9 +1,8 @@
-# Copied from results.py at the top of the repo by scripts/sync_ha_core.py. Edit that file, not this one.
 """Fetch Results (Smartschool "Resultaten") and pick the new ones for the Results report.
 
 A Result is new when its publication time is after the previous Results report was delivered,
-and no more than NEW_RESULTS_MAX_DAYS ago. The time of the last delivered report is kept in
-LAST_RUN_FILE next to the code.
+and no more than NEW_RESULTS_MAX_DAYS ago. Where the time of the last delivered report is kept is
+up to the caller: a file for the app (main.py), Home Assistant's storage for the integration.
 """
 
 from __future__ import annotations
@@ -11,14 +10,12 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 from .fetch import TZ, to_plain
 
 log = logging.getLogger(__name__)
 
 NEW_RESULTS_MAX_DAYS = 14
-LAST_RUN_FILE = Path(__file__).resolve().parent / "last_results_run.txt"
 
 # Smartschool's score colour, worst to best, as a smiley. Colours Smartschool has but we haven't
 # seen used ("steel", "grass") get no face rather than a guessed one.
@@ -79,21 +76,10 @@ def new_results(raws: list[dict], since: datetime, now: datetime) -> list[Result
     return sorted(results, key=lambda r: (r.taken, r.subject, r.name))
 
 
-def load_last_run(path: Path | None = None) -> datetime | None:
-    try:
-        return _brussels((path or LAST_RUN_FILE).read_text(encoding="utf8").strip())
-    except (FileNotFoundError, ValueError):
-        return None
-
-
-def save_last_run(when: datetime, path: Path | None = None) -> None:
-    (path or LAST_RUN_FILE).write_text(when.isoformat() + "\n", encoding="utf8")
-
-
 def fetch_results(settings: dict[str, str], since: datetime, now: datetime) -> list[Result]:
     from smartschool import Results, Smartschool
 
-    from .config import smartschool_credentials
+    from .credentials import smartschool_credentials
 
     session = Smartschool(smartschool_credentials(settings))
     # "details" would make the library fetch each Result again (class averages), which also

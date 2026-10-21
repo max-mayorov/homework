@@ -5,8 +5,8 @@ from datetime import date, datetime
 import pytest
 from PIL import Image
 
-from fetch import Item
-from printer import WIDTH, PrinterError, _font, escpos_raster, parse_address, print_image, render_report, wrap
+from homework.fetch import Item
+from homework.printer import WIDTH, PrinterError, _font, escpos_raster, parse_address, print_image, render_report, wrap
 
 TODAY = date(2026, 9, 29)
 NOW = datetime(2026, 9, 29, 18, 0)
@@ -101,13 +101,13 @@ def test_print_image_unreachable_printer_raises_printer_error():
 
 
 def _result(colour, feedback=()):
-    from results import Result
+    from homework.results import Result
 
     return Result(subject="Frans", name="Test Verbes", score="4/10", percentage=40, colour=colour, taken=date(2026, 10, 2), published=NOW, feedback=feedback)
 
 
 def test_render_results_is_black_and_white_and_receipt_width():
-    from printer import render_results
+    from homework.printer import render_results
 
     img = render_results([_result("red", ("Au travail!",)), _result("olive")], now=NOW)
     assert img.mode == "1" and img.width == WIDTH
@@ -115,7 +115,7 @@ def test_render_results_is_black_and_white_and_receipt_width():
 
 
 def test_each_score_colour_gets_its_own_face():
-    from printer import render_results
+    from homework.printer import render_results
 
     images = {c: render_results([_result(c)], now=NOW).tobytes() for c in ("red", "yellow", "green", "olive", "steel")}
     assert len(set(images.values())) == 5

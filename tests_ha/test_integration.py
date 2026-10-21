@@ -14,9 +14,9 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.smartschool_homework.const import DOMAIN
-from custom_components.smartschool_homework.core.fetch import TZ, Item
-from custom_components.smartschool_homework.core.printer import PrinterError
-from custom_components.smartschool_homework.core.results import Result
+from custom_components.smartschool_homework.homework.fetch import TZ, Item
+from custom_components.smartschool_homework.homework.printer import PrinterError
+from custom_components.smartschool_homework.homework.results import Result
 
 REPORTER = "custom_components.smartschool_homework.reporter"
 ACCOUNT = {"main_url": "myschool.smartschool.be", CONF_USERNAME: "kid.name", CONF_PASSWORD: "hunter22", "mfa": "2012-01-31"}
