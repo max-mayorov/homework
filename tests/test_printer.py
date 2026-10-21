@@ -68,6 +68,15 @@ def test_parse_address():
     assert parse_address("192.168.1.50") == ("192.168.1.50", 9100)
     assert parse_address(" 192.168.1.50:9200 ") == ("192.168.1.50", 9200)
     assert parse_address("printer.local") == ("printer.local", 9100)
+    assert parse_address("[fe80::1]:9200") == ("fe80::1", 9200)
+    assert parse_address("[fe80::1]") == ("fe80::1", 9100)
+    assert parse_address("fe80::1") == ("fe80::1", 9100)
+
+
+@pytest.mark.parametrize("address", ["", ":9100", "printer:abc", "printer:0", "printer:70000", "[fe80::1]9100", "printer:"])
+def test_parse_address_rejects_what_cant_be_printed_to(address):
+    with pytest.raises(ValueError):
+        parse_address(address)
 
 
 def test_print_image_sends_bytes_to_printer():

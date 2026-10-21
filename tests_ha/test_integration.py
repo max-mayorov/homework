@@ -38,9 +38,22 @@ async def setup(hass: HomeAssistant, options: dict | None = None) -> MockConfigE
     return entry
 
 
+def add_telegram_bot(hass: HomeAssistant) -> MockConfigEntry:
+    """A Telegram bot integration entry ("bot-entry") with chat 42 allowed, as TELEGRAM refers to."""
+    bot = MockConfigEntry(
+        domain="telegram_bot",
+        entry_id="bot-entry",
+        title="Home bot",
+        subentries_data=[ConfigSubentryData(data={"chat_id": 42}, subentry_type="allowed_chat_ids", title="Family", unique_id="42")],
+    )
+    bot.add_to_hass(hass)
+    return bot
+
+
 @pytest.fixture
 def telegram(hass: HomeAssistant) -> list[dict]:
     """A stand-in for the Telegram bot integration's send_message action. Returns the calls it gets."""
+    add_telegram_bot(hass)
     calls: list[dict] = []
 
     async def send_message(call: ServiceCall):
@@ -66,19 +79,15 @@ async def test_config_flow_logs_in_and_creates_the_entry(hass: HomeAssistant):
 
 
 async def test_options_offer_the_telegram_bot_chats(hass: HomeAssistant):
-    bot = MockConfigEntry(
-        domain="telegram_bot",
-        title="Home bot",
-        subentries_data=[ConfigSubentryData(data={"chat_id": 42}, subentry_type="allowed_chat_ids", title="Family", unique_id="42")],
-    )
-    bot.add_to_hass(hass)
+    bot = add_telegram_bot(hass)
     entry = await setup(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     chat_field = next(f for f in result["data_schema"].schema if f == "telegram_chat")
     assert result["data_schema"].schema[chat_field].config["options"] == [{"value": f"{bot.entry_id}:42", "label": "Home bot: Family"}]
 
-    result = await hass.config_entries.options.async_configure(result["flow_id"], {"telegram_chat": f"{bot.entry_id}:42", "printer_address": "10.0.0.9:abc"})
-    assert result["errors"] == {"printer_address": "invalid_printer_address"}
+    for bad_address in ("10.0.0.9:abc", "10.0.0.9:70000", ":9100"):
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"telegram_chat": f"{bot.entry_id}:42", "printer_address": bad_address})
+        assert result["errors"] == {"printer_address": "invalid_printer_address"}
     result = await hass.config_entries.options.async_configure(result["flow_id"], {"telegram_chat": f"{bot.entry_id}:42", **PRINTER})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {"telegram_chat": f"{bot.entry_id}:42", **PRINTER}
@@ -120,6 +129,8 @@ async def test_long_reports_are_split_at_telegrams_limit(hass: HomeAssistant, te
 
 
 async def test_telegram_failure_is_raised(hass: HomeAssistant):
+    add_telegram_bot(hass)
+
     async def send_message(call: ServiceCall):
         raise HomeAssistantError("Chat not found")
 
@@ -127,6 +138,18 @@ async def test_telegram_failure_is_raised(hass: HomeAssistant):
     await setup(hass, TELEGRAM)
     with patch(f"{REPORTER}.fetch", return_value=[ITEM]), pytest.raises(HomeAssistantError, match="Homework report failed while sending to Telegram: HomeAssistantError: Chat not found"):
         await hass.services.async_call(DOMAIN, "send_homework_report", {}, blocking=True)
+
+
+async def test_a_removed_telegram_chat_is_reported_and_not_suggested(hass: HomeAssistant, telegram):
+    entry = await setup(hass, {"telegram_chat": "bot-entry:99"})  # chat 99 isn't (or no longer) allowed
+    with patch(f"{REPORTER}.fetch", return_value=[ITEM]), pytest.raises(ServiceValidationError) as raised:
+        await hass.services.async_call(DOMAIN, "send_homework_report", {}, blocking=True)
+    assert raised.value.translation_key == "telegram_chat_gone"
+    assert telegram == []
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    chat_field = next(f for f in result["data_schema"].schema if f == "telegram_chat")
+    assert (chat_field.description or {}).get("suggested_value") is None
 
 
 async def test_switched_off_telegram_means_nowhere_to_send(hass: HomeAssistant, telegram):

@@ -29,6 +29,7 @@ from .const import (
     CONF_TELEGRAM_CHAT,
     DOMAIN,
     TELEGRAM_BOT_DOMAIN,
+    TELEGRAM_CHAT_SUBENTRY,
 )
 from .homework.fetch import TZ, fetch
 from .homework.message import build_message, build_results_message
@@ -104,7 +105,19 @@ class Reporter:
         printing = (self.printing_on if printing is None else printing) and self.has_printer
         if not (telegram or printing or preview_ok):
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="nowhere_to_send")
+        if telegram and not self._telegram_chat_exists():
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="telegram_chat_gone")
         return telegram, printing
+
+    def _telegram_chat_exists(self) -> bool:
+        """Whether the chosen chat is still set up in the Telegram bot integration (it may have been removed since)."""
+        bot, chat_id = self.telegram_chat
+        entry = self.hass.config_entries.async_get_entry(bot)
+        return (
+            entry is not None
+            and entry.domain == TELEGRAM_BOT_DOMAIN
+            and any(chat.subentry_type == TELEGRAM_CHAT_SUBENTRY and chat.data.get("chat_id") == chat_id for chat in entry.subentries.values())
+        )
 
     async def homework_report(self, today: date | None = None, telegram: bool | None = None, printing: bool | None = None, preview_ok: bool = False) -> dict[str, Any]:
         """The Homework report for the next school day after `today`. Returns its text and number of Items."""

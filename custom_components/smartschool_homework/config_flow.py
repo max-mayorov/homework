@@ -141,5 +141,8 @@ class HomeworkOptionsFlow(OptionsFlow):
         if chats := _telegram_chats(self.hass):
             fields[CONF_TELEGRAM_CHAT] = SelectSelector(SelectSelectorConfig(options=chats, mode=SelectSelectorMode.DROPDOWN))
         fields |= {CONF_PRINTER_ADDRESS: str, CONF_PRINTER_FONT: str, CONF_PRINTER_FONT_BOLD: str}
-        schema = vol.Schema({vol.Optional(key, description={"suggested_value": current.get(key)}): kind for key, kind in fields.items()})
+        suggested = dict(current)
+        if suggested.get(CONF_TELEGRAM_CHAT) not in [chat["value"] for chat in chats]:
+            suggested.pop(CONF_TELEGRAM_CHAT, None)  # that chat was removed from the Telegram bot integration
+        schema = vol.Schema({vol.Optional(key, description={"suggested_value": suggested.get(key)}): kind for key, kind in fields.items()})
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

@@ -259,11 +259,21 @@ def escpos_raster(img: Image.Image) -> bytes:
 
 
 def parse_address(address: str) -> tuple[str, int]:
+    """"host", "host:port", "[IPv6]" or "[IPv6]:port" as (host, port). Raises ValueError for anything else."""
     address = address.strip()
-    if address.count(":") == 1:
+    host, port = address, str(DEFAULT_PORT)
+    if address.startswith("["):
+        host, _, rest = address[1:].partition("]")
+        if rest:
+            if not rest.startswith(":"):
+                raise ValueError(f"Not a printer address: {address!r}")
+            port = rest[1:]
+    elif address.count(":") == 1:
         host, port = address.split(":")
-        return host, int(port)
-    return address, DEFAULT_PORT
+    host, port = host.strip(), int(port)
+    if not host or not 0 < port < 65536:
+        raise ValueError(f"Not a printer address: {address!r}")
+    return host, port
 
 
 def print_image(address: str, img: Image.Image, timeout: float = 15.0) -> None:

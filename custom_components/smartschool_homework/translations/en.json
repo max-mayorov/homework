@@ -60,7 +60,7 @@
       }
     },
     "error": {
-      "invalid_printer_address": "Use host or host:port, e.g. 192.168.1.50 or 192.168.1.50:9100."
+      "invalid_printer_address": "Use host, host:port or [IPv6]:port, with a port from 1 to 65535, e.g. 192.168.1.50 or 192.168.1.50:9100."
     }
   },
   "entity": {
@@ -148,6 +148,9 @@
     },
     "not_set_up": {
       "message": "Smartschool Homework isn't set up."
+    },
+    "telegram_chat_gone": {
+      "message": "The Telegram chat chosen for reports is no longer set up in the Telegram bot integration: pick a chat again in this integration's options."
     }
   }
 }
