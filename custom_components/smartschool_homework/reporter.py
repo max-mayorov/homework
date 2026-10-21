@@ -1,8 +1,9 @@
 """Build the Homework and Results reports and deliver them to Telegram and/or the receipt printer.
 
-Uses the app's business logic (core/), called from buttons and actions instead of cron. Failures
-are raised as Home Assistant errors, which HA shows or logs; they aren't sent to Telegram. The
-smartschool library, Telegram and the printer all block, so they run in the executor.
+Uses the app's business logic (core/), called from buttons and actions instead of cron. Telegram
+messages go through Home Assistant's Telegram bot integration. Failures are raised as Home
+Assistant errors, which HA shows or logs; they aren't sent to Telegram. The smartschool library
+and the printer block, so they run in the executor.
 """
 
 from __future__ import annotations
@@ -25,13 +26,13 @@ from .const import (
     CONF_PRINTER_ADDRESS,
     CONF_PRINTER_FONT,
     CONF_PRINTER_FONT_BOLD,
-    CONF_TELEGRAM_BOT_TOKEN,
-    CONF_TELEGRAM_CHAT_ID,
+    CONF_TELEGRAM_CHAT,
     DOMAIN,
+    TELEGRAM_BOT_DOMAIN,
 )
 from .core.fetch import TZ, fetch
 from .core.message import build_message, build_results_message
-from .core.notify import send
+from .core.notify import split_message
 from .core.printer import print_image, render_report, render_results
 from .core.results import fetch_results, window_start
 
@@ -40,7 +41,7 @@ _LOGGER = logging.getLogger(__name__)
 TELEGRAM, PRINTING = "sending to Telegram", "printing"
 
 # Masked in error messages
-SECRETS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME", "TELEGRAM_BOT_TOKEN")
+SECRETS = ("SMARTSCHOOL_PASSWORD", "SMARTSCHOOL_MFA", "SMARTSCHOOL_USERNAME")
 
 # Config entry keys -> the setting names the app's modules use
 SETTING_NAMES = {
@@ -48,8 +49,6 @@ SETTING_NAMES = {
     CONF_PASSWORD: "SMARTSCHOOL_PASSWORD",
     CONF_MAIN_URL: "SMARTSCHOOL_MAIN_URL",
     CONF_MFA: "SMARTSCHOOL_MFA",
-    CONF_TELEGRAM_BOT_TOKEN: "TELEGRAM_BOT_TOKEN",
-    CONF_TELEGRAM_CHAT_ID: "TELEGRAM_CHAT_ID",
     CONF_PRINTER_ADDRESS: "PRINTER_ADDRESS",
     CONF_PRINTER_FONT: "PRINTER_FONT",
     CONF_PRINTER_FONT_BOLD: "PRINTER_FONT_BOLD",
@@ -66,12 +65,13 @@ def to_settings(*sources: Mapping[str, Any]) -> dict[str, str]:
     return settings
 
 
-def has_telegram(settings: Mapping[str, str]) -> bool:
-    return bool(settings.get("TELEGRAM_BOT_TOKEN") and settings.get("TELEGRAM_CHAT_ID"))
-
-
-def has_printer(settings: Mapping[str, str]) -> bool:
-    return bool(settings.get("PRINTER_ADDRESS"))
+def telegram_chat(value: str | None) -> tuple[str, int] | None:
+    """The CONF_TELEGRAM_CHAT option, "<telegram_bot config entry id>:<chat id>", as (entry id, chat id)."""
+    bot, _, chat_id = (value or "").rpartition(":")
+    try:
+        return (bot, int(chat_id)) if bot else None
+    except ValueError:
+        return None
 
 
 class Reporter:
@@ -80,19 +80,28 @@ class Reporter:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self.settings = to_settings(entry.data, entry.options)
+        self.telegram_chat = telegram_chat(entry.options.get(CONF_TELEGRAM_CHAT))
         self.telegram_on = True
         self.printing_on = True
         self._lock = asyncio.Lock()  # one report at a time, e.g. when a button is pressed twice
         self._store: Store[dict[str, str]] = Store(hass, 1, f"{DOMAIN}.{entry.entry_id}")
 
+    @property
+    def has_telegram(self) -> bool:
+        return self.telegram_chat is not None
+
+    @property
+    def has_printer(self) -> bool:
+        return bool(self.settings.get("PRINTER_ADDRESS"))
+
     def channels(self, telegram: bool | None, printing: bool | None, preview_ok: bool) -> tuple[bool, bool]:
         """Where to deliver: the switches, unless the call says otherwise. Raises if there's nowhere to deliver and `preview_ok` is False."""
-        if telegram and not has_telegram(self.settings):
+        if telegram and not self.has_telegram:
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="telegram_not_set_up")
-        if printing and not has_printer(self.settings):
+        if printing and not self.has_printer:
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="printer_not_set_up")
-        telegram = (self.telegram_on if telegram is None else telegram) and has_telegram(self.settings)
-        printing = (self.printing_on if printing is None else printing) and has_printer(self.settings)
+        telegram = (self.telegram_on if telegram is None else telegram) and self.has_telegram
+        printing = (self.printing_on if printing is None else printing) and self.has_printer
         if not (telegram or printing or preview_ok):
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="nowhere_to_send")
         return telegram, printing
@@ -152,7 +161,7 @@ class Reporter:
         failed: dict[str, Exception] = {}
         if telegram:
             try:
-                await self.hass.async_add_executor_job(send, self.settings, text)
+                await self._send_telegram(text)
             except Exception as exc:  # noqa: BLE001 - reported with the printer's outcome
                 failed[TELEGRAM] = exc
         if printing:
@@ -162,6 +171,19 @@ class Reporter:
             except Exception as exc:  # noqa: BLE001 - reported with Telegram's outcome
                 failed[PRINTING] = exc
         return failed
+
+    async def _send_telegram(self, text: str) -> None:
+        """Send through the Telegram bot integration, as plain text (teachers' text isn't Markdown), split at Telegram's limit."""
+        bot, chat_id = self.telegram_chat
+        for part in split_message(text):
+            # With a response, telegram_bot raises if the chat didn't get the message
+            await self.hass.services.async_call(
+                TELEGRAM_BOT_DOMAIN,
+                "send_message",
+                {"config_entry_id": bot, "target": [chat_id], "message": part, "parse_mode": "plain_text", "disable_web_page_preview": True},
+                blocking=True,
+                return_response=True,
+            )
 
     def _error(self, report: str, failed: dict[str, Exception]) -> HomeAssistantError:
         """One error for the failed steps, with the configured secrets masked. Home Assistant logs or shows it."""

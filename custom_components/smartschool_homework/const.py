@@ -9,8 +9,7 @@ CONF_MAIN_URL = "main_url"
 CONF_MFA = "mfa"
 
 # Config entry options (Telegram and the receipt printer, both optional)
-CONF_TELEGRAM_BOT_TOKEN = "telegram_bot_token"
-CONF_TELEGRAM_CHAT_ID = "telegram_chat_id"
+CONF_TELEGRAM_CHAT = "telegram_chat"  # "<telegram_bot config entry id>:<chat id>"
 CONF_PRINTER_ADDRESS = "printer_address"
 CONF_PRINTER_FONT = "printer_font"
 CONF_PRINTER_FONT_BOLD = "printer_font_bold"
@@ -23,3 +22,7 @@ ATTR_DATE = "date"
 ATTR_SINCE = "since"
 ATTR_TELEGRAM = "telegram"
 ATTR_PRINT = "print"
+
+# Home Assistant's Telegram bot integration, which sends the Telegram messages
+TELEGRAM_BOT_DOMAIN = "telegram_bot"
+TELEGRAM_CHAT_SUBENTRY = "allowed_chat_ids"

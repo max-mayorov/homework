@@ -1,13 +1,20 @@
 {
   "domain": "smartschool_homework",
   "name": "Smartschool Homework",
-  "codeowners": ["@max-mayorov"],
+  "after_dependencies": [
+    "telegram_bot"
+  ],
+  "codeowners": [
+    "@max-mayorov"
+  ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/max-mayorov/homework#home-assistant",
+  "documentation": "https://github.com/max-mayorov/homework/blob/main/custom_components/smartschool_homework/README.md",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/max-mayorov/homework/issues",
-  "requirements": ["smartschool[mfa]==0.10.0"],
+  "requirements": [
+    "smartschool[mfa]==0.10.0"
+  ],
   "version": "1.0.0"
 }

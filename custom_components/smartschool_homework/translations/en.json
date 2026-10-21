@@ -45,23 +45,21 @@
     "step": {
       "init": {
         "title": "Where to send reports",
-        "description": "Both are optional: leave a field empty to not use it. The Telegram and Print receipt switches turn each one on or off.",
+        "description": "Both are optional: leave a field empty to not use it. Telegram messages go through Home Assistant's Telegram bot integration: set that up first and add the chat to it, then pick the chat here. The Telegram and Print receipt switches turn each one on or off.",
         "data": {
-          "telegram_bot_token": "Telegram bot token",
-          "telegram_chat_id": "Telegram chat id",
+          "telegram_chat": "Telegram chat",
           "printer_address": "Receipt printer address",
           "printer_font": "Receipt font (.ttf path)",
           "printer_font_bold": "Receipt bold font (.ttf path)"
         },
         "data_description": {
-          "telegram_bot_token": "From @BotFather; see the README",
+          "telegram_chat": "A chat of the Telegram bot integration. Only shown once that integration has a chat.",
           "printer_address": "80 mm ESC/POS network printer, as host or host:port (port 9100 if left out)",
           "printer_font": "Only if the receipt text looks wrong; the default is DejaVu Sans if found"
         }
       }
     },
     "error": {
-      "telegram_incomplete": "Fill in both the Telegram bot token and the chat id, or neither.",
       "invalid_printer_address": "Use host or host:port, e.g. 192.168.1.50 or 192.168.1.50:9100."
     }
   },
@@ -134,7 +132,7 @@
       "message": "{report} report failed while {step}: {error}"
     },
     "telegram_not_set_up": {
-      "message": "Telegram isn't set up: add the bot token and chat id in the integration's options."
+      "message": "Telegram isn't set up: pick a Telegram chat in the integration's options."
     },
     "printer_not_set_up": {
       "message": "The receipt printer isn't set up: add its address in the integration's options."

@@ -16,7 +16,6 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import HomeworkConfigEntry
 from .entity import HomeworkEntity
-from .reporter import has_printer, has_telegram
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HomeworkConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -48,7 +47,7 @@ class _ChannelSwitch(HomeworkEntity, SwitchEntity, RestoreEntity):
 class TelegramSwitch(_ChannelSwitch):
     @property
     def available(self) -> bool:
-        return has_telegram(self.reporter.settings)
+        return self.reporter.has_telegram
 
     def _set(self, on: bool) -> None:
         self._attr_is_on = self.reporter.telegram_on = on
@@ -57,7 +56,7 @@ class TelegramSwitch(_ChannelSwitch):
 class PrintingSwitch(_ChannelSwitch):
     @property
     def available(self) -> bool:
-        return has_printer(self.reporter.settings)
+        return self.reporter.has_printer
 
     def _set(self, on: bool) -> None:
         self._attr_is_on = self.reporter.printing_on = on

@@ -1,6 +1,6 @@
 # Smartschool Homework for Home Assistant
 
-This integration sends the same reports as the [Raspberry Pi app](../../README.md) to the same Telegram chat and receipt printer, but you start them from HA: from buttons on a dashboard, or from your own automations. The integration has no schedule of its own.
+This integration sends the same reports as the [Raspberry Pi app](../../README.md) to Telegram and the receipt printer, but you start them from HA: from buttons on a dashboard, or from your own automations. The integration has no schedule of its own.
 
 Use one or the other, not both: with the Pi cron job running as well, you'd get every report twice.
 
@@ -10,13 +10,16 @@ With [HACS](https://hacs.xyz): **HACS → ⋮ → Custom repositories**, add `ht
 
 Without HACS: copy the `custom_components/smartschool_homework` folder into the `custom_components` folder of your HA config (create it if needed), and restart Home Assistant.
 
-Needs Home Assistant 2024.12 or newer.
+Needs Home Assistant 2025.7 or newer.
 
 ## Set up
 
 1. **Settings → Devices & services → Add integration → Smartschool Homework.**
 2. Fill in the school host, your child's username, **your** parent password, and the birthday (`YYYY-MM-DD`) or authenticator secret. These are the same as the app's `SMARTSCHOOL_*` settings. HA logs in once to check them.
-3. Open the integration's **Configure** to add Telegram (bot token and chat id, see "Create the Telegram bot" in the [app's README](../../README.md#create-the-telegram-bot)) and/or the receipt printer's address. Both are optional. If the receipt text looks wrong, you can also give paths to `.ttf` fonts here.
+3. Optional: for Telegram, set up Home Assistant's own [Telegram bot](https://www.home-assistant.io/integrations/telegram_bot/) integration, and add the chat the reports should go to as one of its allowed chats. You can use the same bot as the Pi app (see "Create the Telegram bot" in the [app's README](../../README.md#create-the-telegram-bot)): sending from both is fine.
+4. Open this integration's **Configure** and pick that Telegram chat, and/or give the receipt printer's address. Both are optional. If the receipt text looks wrong, you can also give paths to `.ttf` fonts here.
+
+Telegram messages go through the Telegram bot integration's `telegram_bot.send_message` action, so this integration never sees the bot token. They're sent as plain text, so teachers' text arrives exactly as written, and a report longer than Telegram's 4096-character limit is split into several messages.
 
 To change the password later, use **⋮ → Reconfigure** on the integration.
 

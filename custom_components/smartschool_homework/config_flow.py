@@ -11,7 +11,15 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .const import (
     CONF_MAIN_URL,
@@ -19,9 +27,10 @@ from .const import (
     CONF_PRINTER_ADDRESS,
     CONF_PRINTER_FONT,
     CONF_PRINTER_FONT_BOLD,
-    CONF_TELEGRAM_BOT_TOKEN,
-    CONF_TELEGRAM_CHAT_ID,
+    CONF_TELEGRAM_CHAT,
     DOMAIN,
+    TELEGRAM_BOT_DOMAIN,
+    TELEGRAM_CHAT_SUBENTRY,
 )
 from .core.fetch import TZ, fetch
 from .core.printer import parse_address
@@ -102,15 +111,23 @@ class HomeworkConfigFlow(ConfigFlow, domain=DOMAIN):
         return HomeworkOptionsFlow()
 
 
+def _telegram_chats(hass: HomeAssistant) -> list[SelectOptionDict]:
+    """The chats allowed in Home Assistant's Telegram bot integration, as "<bot entry id>:<chat id>"."""
+    return [
+        SelectOptionDict(value=f"{bot.entry_id}:{chat.data['chat_id']}", label=f"{bot.title}: {chat.title}")
+        for bot in hass.config_entries.async_entries(TELEGRAM_BOT_DOMAIN)
+        for chat in bot.subentries.values()
+        if chat.subentry_type == TELEGRAM_CHAT_SUBENTRY
+    ]
+
+
 class HomeworkOptionsFlow(OptionsFlow):
-    """Telegram and the receipt printer. Leave a field empty to not use it."""
+    """Telegram (a chat of HA's Telegram bot integration) and the receipt printer. Leave a field empty to not use it."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
             options = {k: v.strip() for k, v in user_input.items() if isinstance(v, str) and v.strip()}
-            if bool(options.get(CONF_TELEGRAM_BOT_TOKEN)) != bool(options.get(CONF_TELEGRAM_CHAT_ID)):
-                errors["base"] = "telegram_incomplete"
             if address := options.get(CONF_PRINTER_ADDRESS):
                 try:
                     parse_address(address)
@@ -120,12 +137,9 @@ class HomeworkOptionsFlow(OptionsFlow):
                 return self.async_create_entry(data=options)
 
         current = user_input or self.config_entry.options
-        fields = {
-            CONF_TELEGRAM_BOT_TOKEN: _PASSWORD,
-            CONF_TELEGRAM_CHAT_ID: str,
-            CONF_PRINTER_ADDRESS: str,
-            CONF_PRINTER_FONT: str,
-            CONF_PRINTER_FONT_BOLD: str,
-        }
+        fields: dict[str, Any] = {}
+        if chats := _telegram_chats(self.hass):
+            fields[CONF_TELEGRAM_CHAT] = SelectSelector(SelectSelectorConfig(options=chats, mode=SelectSelectorMode.DROPDOWN))
+        fields |= {CONF_PRINTER_ADDRESS: str, CONF_PRINTER_FONT: str, CONF_PRINTER_FONT_BOLD: str}
         schema = vol.Schema({vol.Optional(key, description={"suggested_value": current.get(key)}): kind for key, kind in fields.items()})
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
