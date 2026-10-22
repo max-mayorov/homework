@@ -1,3 +1,5 @@
+<img src="custom_components/smartschool_homework/brand/icon.png" alt="" width="96">
+
 # Smartschool Homework
 
 Keeps you up to date on your child's Smartschool, with two reports:
@@ -309,6 +311,7 @@ custom_components/smartschool_homework/
   homework/printer.py     items / results      →  black-and-white receipt image → 80 mm ESC/POS network printer
   homework/credentials.py settings             →  Smartschool login
   config_flow.py, reporter.py, button.py, switch.py, library_logging.py   the Home Assistant side
+  brand/icon.png, brand/icon@2x.png   the integration's icon (Home Assistant 2026.3 and later)
 
 main.py      the stand-alone app: puts the integration's folder on sys.path, imports homework,
              and adds settings, logging, error messages to Telegram and the results bookkeeping
