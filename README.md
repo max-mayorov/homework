@@ -1,4 +1,4 @@
-<img src="custom_components/smartschool_homework/brand/icon.png" alt="" width="96">
+<img src="https://raw.githubusercontent.com/max-mayorov/homework/main/custom_components/smartschool_homework/brand/icon.png" alt="" width="96">
 
 # Smartschool Homework
 
